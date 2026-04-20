@@ -256,8 +256,8 @@ app.get('*', (req, res) => {
 });
 
 // ── Start ──────────────────────────────────────────────────────────────────
-app.listen(PORT, () => {
-  console.log(`\n🌊 Nautical Nick server running on port ${PORT}`);
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`\n🌊 Nautical Nick server running on port ${PORT} (0.0.0.0)`);
   console.log(`   Local:        http://localhost:${PORT}`);
   console.log(`   LemonSqueezy: ${process.env.LS_CHECKOUT_URL ? '✓ configured' : '✗ not configured'}`);
   console.log(`   Resend:       ${process.env.RESEND_API_KEY ? '✓ configured' : '✗ not configured'}\n`);
