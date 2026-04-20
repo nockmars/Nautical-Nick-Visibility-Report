@@ -23,7 +23,16 @@
       "PowerShell(git config --global user.email \"nickmeyers312@gmail.com\")",
       "PowerShell(git config --global --get user.name)",
       "PowerShell(git config --global --get user.email)",
-      "PowerShell(git init; git branch -M main; git add .; git status --short | Select-Object -First 20; Write-Output \"---\"; \\(git status --short | Measure-Object\\).Count)"
+      "PowerShell(git init; git branch -M main; git add .; git status --short | Select-Object -First 20; Write-Output \"---\"; \\(git status --short | Measure-Object\\).Count)",
+      "PowerShell(git commit -m \"Initial commit\")",
+      "PowerShell(git remote add origin https://github.com/nockmars/Nautical-Nick-Visibility-Report.git)",
+      "PowerShell(git push -u origin main 2>&1)",
+      "PowerShell(Get-Command railway -ErrorAction SilentlyContinue)",
+      "PowerShell(npm install --no-audit --no-fund 2>&1)",
+      "PowerShell(git add package.json package-lock.json)",
+      "PowerShell(git commit -m \"Regenerate package-lock.json to match dependencies \\(resend, remove stripe/twilio\\)\")",
+      "PowerShell(git push 2>&1)",
+      "PowerShell(git add -A)"
     ]
   }
 }
