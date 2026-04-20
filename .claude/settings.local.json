@@ -1,0 +1,29 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(echo \"exit: $?\")",
+      "Bash(npm --version)",
+      "Bash(py --version)",
+      "Bash(where python *)",
+      "Bash(where node *)",
+      "mcp__Claude_Preview__preview_start",
+      "Bash(winget --version)",
+      "Bash(winget install *)",
+      "Bash(cmd.exe /c \"node --version && npm --version\")",
+      "Bash(cmd.exe /c \"where node & where npm\")",
+      "Bash(\"/c/Program Files/nodejs/node.exe\" --version)",
+      "Bash(\"/c/Program Files/nodejs/npm.cmd\" --version)",
+      "Bash(\"/c/Program Files/nodejs/npm.cmd\" install --omit=dev)",
+      "Bash(npm install *)",
+      "Read(//c/Users/nickm/.claude/**)",
+      "Read(//c/Users/nickm/.claude/projects/**)",
+      "Bash(git --version)",
+      "Bash(git config *)",
+      "PowerShell(git config --global user.name \"Nick Meyers\")",
+      "PowerShell(git config --global user.email \"nickmeyers312@gmail.com\")",
+      "PowerShell(git config --global --get user.name)",
+      "PowerShell(git config --global --get user.email)",
+      "PowerShell(git init; git branch -M main; git add .; git status --short | Select-Object -First 20; Write-Output \"---\"; \\(git status --short | Measure-Object\\).Count)"
+    ]
+  }
+}

@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>The Nautical Nick Visibility Report — San Diego Ocean Conditions</title>
+  <meta name="description" content="Daily underwater visibility tracking for San Diego spearfishermen. AI-powered analysis of satellite data, Scripps Pier Cam, and live dive reports." />
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Russo+One&family=Exo+2:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400;1,500&display=swap" rel="stylesheet" />
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+
+  <!-- Payments: LemonSqueezy hosted checkout (no SDK needed — backend builds the URL) -->
+
+  <!-- Google AdSense — replace ca-pub-XXXX with your publisher ID after approval -->
+  <!-- <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXXXXXXXXXXXXXXXXXX" crossorigin="anonymous"></script> -->
+
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       HEADER
+  ═══════════════════════════════════════════════════════════════ -->
+  <header class="site-header">
+    <div class="header-inner">
+
+      <div class="header-left">
+        <div class="profile-ring">
+          <!-- Replace assets/profile.jpg with your actual YouTube channel photo -->
+          <img
+            src="assets/profile.jpg"
+            alt="Nautical Nick"
+            class="profile-img"
+            onerror="this.parentElement.classList.add('profile-fallback')"
+          />
+          <span class="profile-initials" aria-hidden="true">NN</span>
+        </div>
+        <div class="header-text">
+          <h1 class="site-title">The Nautical Nick<br>Visibility Report</h1>
+          <p class="site-subtitle" id="siteSubtitle">Southern California &nbsp;·&nbsp; Daily Ocean Conditions</p>
+        </div>
+      </div>
+
+      <div class="header-right">
+        <div class="region-switcher">
+          <label for="regionSelect" class="region-label">REGION</label>
+          <select id="regionSelect" class="region-select">
+            <option value="san-diego">San Diego</option>
+            <option value="orange-county">Orange County</option>
+            <option value="la-county">Los Angeles County</option>
+            <option value="catalina-island">Catalina Island</option>
+          </select>
+        </div>
+        <div class="live-badge">
+          <span class="pulse-dot"></span>
+          <span class="live-label">LIVE DATA</span>
+        </div>
+        <p class="last-updated-label">LAST UPDATED</p>
+        <p class="last-updated-value" id="lastUpdated">—</p>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- Ad: header banner (hidden for subscribers) -->
+  <div class="ad-wrap ad-banner subscriber-hidden" id="adTop">
+    <!-- <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-XXXX" data-ad-slot="XXXX" data-ad-format="horizontal" data-full-width-responsive="true"></ins> -->
+    <div class="ad-placeholder">Advertisement</div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       MAIN CONTENT
+  ═══════════════════════════════════════════════════════════════ -->
+  <main class="main-wrap">
+
+    <!-- ─────────────────────────────────────────────────────────────
+         SECTION 1 — Daily AI Analysis
+    ───────────────────────────────────────────────────────────── -->
+    <section class="panel ai-panel" id="aiPanel">
+      <div class="panel-accent-bar"></div>
+      <div class="panel-body">
+        <h2 class="panel-title">
+          <svg class="panel-icon" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.5"/><path d="M12 7v5l3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          <span id="dailyReportTitle">San Diego's Daily Report</span>
+        </h2>
+        <p class="ai-summary-text" id="aiSummary">Loading today's analysis…</p>
+        <div class="ai-meta-row">
+          <span class="ai-sources-badge" id="aiSourcesBadge">Synthesized from regional data sources</span>
+          <span class="ai-timestamp" id="aiTimestamp"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─────────────────────────────────────────────────────────────
+         SECTION 2 — Today's Conditions
+    ───────────────────────────────────────────────────────────── -->
+    <section class="panel conditions-panel" id="conditionsPanel">
+      <div class="panel-body">
+        <h2 class="panel-title">
+          <svg class="panel-icon" viewBox="0 0 24 24" fill="none"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7S2 12 2 12z" stroke="currentColor" stroke-width="1.5"/><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.5"/></svg>
+          Today's Conditions
+        </h2>
+
+        <div class="conditions-grid">
+
+          <!-- Left: Big visibility number + ratings -->
+          <div class="conditions-left">
+            <div class="vis-display">
+              <span class="vis-number" id="visNumber">—</span>
+              <span class="vis-unit">FT</span>
+            </div>
+            <div class="rating-chip" id="ratingChip" data-rating="">—</div>
+            <p class="conditions-note" id="conditionsNote">Loading…</p>
+
+            <div class="starfish-ratings">
+              <div class="starfish-row">
+                <span class="starfish-label">Clarity Rating</span>
+                <div class="starfish-icons" id="clarityRating"></div>
+              </div>
+              <div class="starfish-row">
+                <span class="starfish-label">Conditions for Spearing</span>
+                <div class="starfish-icons" id="spearingRating"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right: Data source cards -->
+          <div class="conditions-right">
+            <h3 class="sources-heading">Data Sources</h3>
+
+            <div class="source-card" id="srcSatellite">
+              <div class="source-header">
+                <span class="source-icon">🛰</span>
+                <span class="source-name">Satellite Chlorophyll</span>
+                <span class="source-badge">NOAA / NASA</span>
+              </div>
+              <div class="source-reading">
+                <span class="source-num" id="chloroVal">—</span>
+                <span class="source-unit-label">mg/m³</span>
+              </div>
+              <p class="source-note" id="chloroNote">Loading…</p>
+            </div>
+
+            <div class="source-card region-sd-only" id="srcPiercam">
+              <div class="source-header">
+                <span class="source-icon">📷</span>
+                <span class="source-name">Scripps Pier Cam</span>
+                <span class="source-badge">UCSD</span>
+              </div>
+              <div class="source-reading">
+                <span class="source-num" id="piercamVal">—</span>
+                <span class="source-unit-label">FT EST.</span>
+              </div>
+              <p class="source-note" id="piercamNote">Loading…</p>
+            </div>
+
+            <div class="source-card" id="srcSurf">
+              <div class="source-header">
+                <span class="source-icon">🌊</span>
+                <span class="source-name">Surf Conditions</span>
+                <span class="source-badge">NDBC / OPEN-METEO</span>
+              </div>
+              <div class="source-reading">
+                <span class="source-num" id="surfVal">—</span>
+                <span class="source-unit-label">FT SWELL</span>
+              </div>
+              <p class="source-note" id="surfNote">Loading…</p>
+            </div>
+
+            <div class="source-card region-sd-only" id="srcJustgetwet">
+              <div class="source-header">
+                <span class="source-icon">🤿</span>
+                <span class="source-name">JustGetWet</span>
+                <span class="source-badge">LIVE REPORT</span>
+              </div>
+              <div class="source-reading">
+                <span class="source-num" id="justgetwetVal">—</span>
+                <span class="source-unit-label">FT EST.</span>
+              </div>
+              <p class="source-note" id="justgetwetNote">Loading…</p>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- ─────────────────────────────────────────────────────────────
+         SECTION 3 — Scripps Pier Cam Snapshots
+    ───────────────────────────────────────────────────────────── -->
+    <section class="panel snapshots-panel region-sd-only" id="snapshotsPanel">
+      <div class="panel-body">
+        <h2 class="panel-title">
+          <svg class="panel-icon" viewBox="0 0 24 24" fill="none"><rect x="3" y="6" width="18" height="14" rx="2" stroke="currentColor" stroke-width="1.5"/><circle cx="12" cy="13" r="3" stroke="currentColor" stroke-width="1.5"/><path d="M9 6V4h6v2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          Scripps Pier Cam Snapshots
+          <span class="panel-tag">UCSD COOLLAB</span>
+        </h2>
+        <p class="snapshots-subtitle">Piling distances: Right-Front 4ft · Right-Back 11ft · Back-Left 14ft · Far-Left 30ft</p>
+        <div class="snapshots-grid" id="snapshotsGrid">
+          <!-- Populated by app.js -->
+        </div>
+      </div>
+    </section>
+
+    <!-- Ad: mid-page rectangle (hidden for subscribers) -->
+    <div class="ad-wrap ad-rect subscriber-hidden" id="adMid">
+      <!-- <ins class="adsbygoogle" ...></ins> -->
+      <div class="ad-placeholder">Advertisement</div>
+    </div>
+
+    <!-- ─────────────────────────────────────────────────────────────
+         SECTION 4 — Spot Breakdown  [SUBSCRIBER LOCKED]
+    ───────────────────────────────────────────────────────────── -->
+    <section class="panel spots-panel" id="spotsPanel">
+      <div class="panel-body">
+        <h2 class="panel-title">
+          <svg class="panel-icon" viewBox="0 0 24 24" fill="none"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" stroke="currentColor" stroke-width="1.5"/><circle cx="12" cy="9" r="2.5" stroke="currentColor" stroke-width="1.5"/></svg>
+          Spot-by-Spot Visibility
+          <span class="panel-tag">FREE</span>
+        </h2>
+        <p class="spots-subtitle">Tap any spot for spearfishing ratings, seasonal fish abundance, hunting tips, and 14-day predictions <span class="inline-lock">🔒</span></p>
+        <div class="spots-grid" id="spotsGrid">
+          <!-- Populated by app.js -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ─────────────────────────────────────────────────────────────
+         SECTION 5 — 14-Day History  [SUBSCRIBER LOCKED]
+    ───────────────────────────────────────────────────────────── -->
+    <section class="panel history-panel" id="historyPanel">
+      <div class="panel-body">
+        <h2 class="panel-title">
+          <svg class="panel-icon" viewBox="0 0 24 24" fill="none"><path d="M3 20h18M5 20V10l7-7 7 7v10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          14-Day Visibility History
+          <span class="panel-tag">FREE</span>
+        </h2>
+        <div class="chart-wrap">
+          <canvas id="historyChart"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─────────────────────────────────────────────────────────────
+         SECTION 6 — Visibility Alerts  [SUBSCRIBER LOCKED]
+    ───────────────────────────────────────────────────────────── -->
+    <section class="panel alerts-panel locked-panel" id="alertsPanel">
+      <div class="panel-body">
+        <h2 class="panel-title">
+          <svg class="panel-icon" viewBox="0 0 24 24" fill="none"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" stroke="currentColor" stroke-width="1.5"/><path d="M13.73 21a2 2 0 0 1-3.46 0" stroke="currentColor" stroke-width="1.5"/></svg>
+          Visibility Alerts
+          <span class="lock-tag">🔒 PREMIUM</span>
+        </h2>
+        <div class="alerts-body" id="alertsBody">
+          <p class="alerts-intro">Get an email when visibility hits your threshold for the selected region. Never miss a great dive day.</p>
+          <form class="alerts-form" id="alertsForm" onsubmit="handleAlertSubmit(event)">
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label" for="alertEmail">Email Address</label>
+                <input
+                  type="email"
+                  id="alertEmail"
+                  class="form-input"
+                  placeholder="you@example.com"
+                  autocomplete="email"
+                  required
+                />
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="alertThreshold">Alert Me When Visibility Is</label>
+                <select id="alertThreshold" class="form-select">
+                  <option value="15">15 ft or better</option>
+                  <option value="20" selected>20 ft or better</option>
+                  <option value="25">25 ft or better</option>
+                  <option value="30">30 ft or better</option>
+                </select>
+              </div>
+            </div>
+            <button type="submit" class="btn-set-alert">Set Alert</button>
+          </form>
+          <p class="alert-confirm" id="alertConfirm" style="display:none"></p>
+        </div>
+        <div class="paywall-overlay" id="alertsPaywall">
+          <div class="paywall-card">
+            <div class="paywall-icon">📧</div>
+            <h3 class="paywall-title">Unlock Email Alerts</h3>
+            <p class="paywall-desc">Set your visibility threshold and get an email the moment conditions hit your target — 15, 20, 25, or 30ft.</p>
+            <button class="btn-subscribe" onclick="openSubscribeModal()">Subscribe — $4.99 / month</button>
+            <p class="paywall-login">Already subscribed? <a href="#" onclick="openLoginModal(); return false;">Sign in</a></p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─────────────────────────────────────────────────────────────
+         SECTION 7 — About
+    ───────────────────────────────────────────────────────────── -->
+    <section class="panel about-panel" id="aboutPanel">
+      <div class="panel-body">
+        <h2 class="panel-title">
+          <svg class="panel-icon" viewBox="0 0 24 24" fill="none"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" stroke="currentColor" stroke-width="1.5"/><circle cx="12" cy="7" r="4" stroke="currentColor" stroke-width="1.5"/></svg>
+          About
+        </h2>
+        <div class="about-body">
+          <div class="about-portrait">
+            <img src="assets/profile.jpg" alt="Nautical Nick" class="about-img" onerror="this.parentElement.classList.add('about-fallback')" />
+            <span class="about-initials" aria-hidden="true">NN</span>
+          </div>
+          <div class="about-text">
+            <h3 class="about-name">Nautical Nick</h3>
+            <p class="about-bio">San Diego spearfisherman with a biology degree. I built this page because good visibility data shouldn't require calling a lifeguard station — it should be right there when you're deciding whether to get in the water.</p>
+            <a
+              href="https://youtube.com/@nautical_nick"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="btn-youtube"
+            >
+              <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M23.5 6.2a3 3 0 0 0-2.1-2.1C19.6 3.6 12 3.6 12 3.6s-7.6 0-9.4.5a3 3 0 0 0-2.1 2.1C0 8 0 12 0 12s0 4 .5 5.8a3 3 0 0 0 2.1 2.1c1.8.5 9.4.5 9.4.5s7.6 0 9.4-.5a3 3 0 0 0 2.1-2.1C24 16 24 12 24 12s0-4-.5-5.8zM9.6 15.6V8.4l6.3 3.6-6.3 3.6z"/></svg>
+              Watch on YouTube
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main><!-- /.main-wrap -->
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       FOOTER
+  ═══════════════════════════════════════════════════════════════ -->
+  <footer class="site-footer">
+    <div class="footer-inner">
+      <p class="footer-title">The Nautical Nick Visibility Report</p>
+      <p class="footer-credits">
+        Data: <a href="https://coastwatch.pfeg.noaa.gov" target="_blank" rel="noopener">NOAA CoastWatch</a>
+        &nbsp;·&nbsp; <a href="https://oceancolor.gsfc.nasa.gov" target="_blank" rel="noopener">NASA Ocean Color</a>
+        &nbsp;·&nbsp; <a href="https://coollab.ucsd.edu/pierviz/" target="_blank" rel="noopener">Scripps Pier Cam (UCSD)</a>
+        &nbsp;·&nbsp; <a href="https://justgetwet.com" target="_blank" rel="noopener">JustGetWet</a>
+      </p>
+      <p class="footer-legal">© 2026 Nautical Nick. Not a substitute for dive planning judgment.</p>
+    </div>
+  </footer>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       SUBSCRIBE MODAL
+  ═══════════════════════════════════════════════════════════════ -->
+  <div class="modal-backdrop" id="subscribeModal" style="display:none" aria-modal="true" role="dialog">
+    <div class="modal-card">
+      <button class="modal-close" onclick="closeModal('subscribeModal')" aria-label="Close">✕</button>
+      <div class="modal-icon">🐠</div>
+      <h2 class="modal-title">Go Premium</h2>
+      <ul class="modal-perks">
+        <li>✔ Spearfishing rating analysis for every spot</li>
+        <li>✔ Seasonal fish abundance by spot — know what's running</li>
+        <li>✔ Hunting tips per species, per spot</li>
+        <li>✔ Email alerts when visibility hits your threshold</li>
+        <li>✔ AI-powered 14-day visibility predictions for each spot</li>
+        <li>✔ Ad-free experience</li>
+      </ul>
+      <p class="modal-price">$4.99 <span>/month</span> &nbsp;·&nbsp; Cancel anytime</p>
+      <div class="modal-form">
+        <input type="email" id="subEmail" class="form-input" placeholder="your@email.com" autocomplete="email" />
+        <button class="btn-subscribe modal-subscribe-btn" id="checkoutBtn" onclick="startCheckout()">
+          Continue to Payment
+        </button>
+      </div>
+      <p class="modal-fine">Secure checkout via LemonSqueezy. Billed monthly.</p>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       LOGIN MODAL
+  ═══════════════════════════════════════════════════════════════ -->
+  <div class="modal-backdrop" id="loginModal" style="display:none" aria-modal="true" role="dialog">
+    <div class="modal-card">
+      <button class="modal-close" onclick="closeModal('loginModal')" aria-label="Close">✕</button>
+      <div class="modal-icon">🔑</div>
+      <h2 class="modal-title">Subscriber Sign-In</h2>
+      <p class="modal-desc">Enter your email to receive a magic sign-in link.</p>
+      <div class="modal-form">
+        <input type="email" id="loginEmail" class="form-input" placeholder="your@email.com" autocomplete="email" />
+        <button class="btn-subscribe modal-subscribe-btn" onclick="sendMagicLink()">Send Sign-In Link</button>
+      </div>
+      <p class="modal-fine" id="loginMsg"></p>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       SPOT DETAIL MODAL
+  ═══════════════════════════════════════════════════════════════ -->
+  <div class="modal-backdrop" id="spotModal" style="display:none" aria-modal="true" role="dialog">
+    <div class="modal-card modal-card-wide">
+      <button class="modal-close" onclick="closeModal('spotModal')" aria-label="Close">✕</button>
+
+      <!-- FREE HEADER -->
+      <div class="spot-modal-header">
+        <h2 class="spot-modal-name" id="spotModalName">—</h2>
+        <p class="spot-modal-meta" id="spotModalMeta">—</p>
+      </div>
+
+      <!-- FREE TILES -->
+      <div class="spot-modal-tiles">
+        <div class="spot-tile">
+          <span class="spot-tile-label">VISIBILITY</span>
+          <span class="spot-tile-value" id="spotModalVis">—<span class="spot-tile-unit">FT</span></span>
+        </div>
+        <div class="spot-tile">
+          <span class="spot-tile-label">CHLOROPHYLL</span>
+          <span class="spot-tile-value" id="spotModalChloro">—<span class="spot-tile-unit">mg/m³</span></span>
+        </div>
+        <div class="spot-tile">
+          <span class="spot-tile-label">SWELL</span>
+          <span class="spot-tile-value" id="spotModalSwell">—<span class="spot-tile-unit">FT</span></span>
+        </div>
+        <div class="spot-tile">
+          <span class="spot-tile-label">WIND</span>
+          <span class="spot-tile-value" id="spotModalWind">—<span class="spot-tile-unit">KTS</span></span>
+        </div>
+      </div>
+
+      <!-- PREMIUM SECTION -->
+      <div class="spot-premium-wrap" id="spotPremiumWrap">
+
+        <!-- Premium content (rendered by JS — blurred for non-subs) -->
+        <div class="spot-premium-content" id="spotPremiumContent">
+
+          <div class="spot-premium-block">
+            <div class="spot-premium-label">
+              <span class="premium-chip">🔒 PREMIUM</span>
+              <h3>Spearfishing Rating</h3>
+            </div>
+            <div class="spot-spearing-rating">
+              <div class="starfish-icons" id="spotModalStarfish"></div>
+              <p class="spot-spearing-summary" id="spotModalSummary">—</p>
+            </div>
+          </div>
+
+          <div class="spot-premium-block">
+            <div class="spot-premium-label">
+              <span class="premium-chip">🔒 PREMIUM</span>
+              <h3>Fish Abundance by Season</h3>
+            </div>
+            <div class="spot-season-grid" id="spotModalSeasons"></div>
+          </div>
+
+          <div class="spot-premium-block">
+            <div class="spot-premium-label">
+              <span class="premium-chip">🔒 PREMIUM</span>
+              <h3>Hunting Tips</h3>
+            </div>
+            <ul class="spot-tips-list" id="spotModalTips"></ul>
+          </div>
+
+          <div class="spot-premium-block">
+            <div class="spot-premium-label">
+              <span class="premium-chip">🔒 PREMIUM</span>
+              <h3>AI 14-Day Visibility Prediction</h3>
+            </div>
+            <p class="spot-prediction" id="spotModalPrediction">—</p>
+          </div>
+
+        </div>
+
+        <!-- Paywall card — shown to non-subscribers -->
+        <div class="spot-paywall" id="spotPaywall">
+          <div class="paywall-card">
+            <div class="paywall-icon">🔱</div>
+            <h3 class="paywall-title">Unlock Spearfishing Insights</h3>
+            <p class="paywall-desc">Get spearing ratings, seasonal fish abundance, hunting tips, and AI predictions for every spot.</p>
+            <button class="btn-subscribe" onclick="openSubscribeModal()">Subscribe — $4.99 / month</button>
+            <p class="paywall-login">Already subscribed? <a href="#" onclick="openLoginModal(); return false;">Sign in</a></p>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+
+  <script src="js/app.js"></script>
+</body>
+</html>

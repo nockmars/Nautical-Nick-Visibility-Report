@@ -1,0 +1,845 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Nick's Command Deck</title>
+<style>
+  :root{
+    --bg:#0b1120;
+    --panel:#101a2e;
+    --panel-2:#162238;
+    --border:#1f2d47;
+    --text:#e6edf7;
+    --muted:#8aa0c2;
+    --accent:#3ddcff;
+    --accent-2:#7c5cff;
+    --good:#37e39b;
+    --warn:#ffcf5c;
+    --danger:#ff6b6b;
+    --code:#3ddcff;
+    --design:#ff7ac6;
+    --cowork:#ffcf5c;
+    --dispatch:#7c5cff;
+    --manual:#8aa0c2;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;}
+  body{min-height:100vh;}
+  a{color:var(--accent);text-decoration:none}
+  button{font-family:inherit}
+
+  /* layout */
+  header.top{
+    padding:24px 32px 12px;border-bottom:1px solid var(--border);
+    display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;
+    background:linear-gradient(180deg,#0f1a33 0%,#0b1120 100%);
+  }
+  header.top h1{margin:0;font-size:22px;letter-spacing:.5px}
+  header.top .sub{color:var(--muted);font-size:13px;margin-top:2px}
+  .badge{display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:600;letter-spacing:.3px;text-transform:uppercase}
+  .nav{display:flex;gap:6px;margin-top:4px;flex-wrap:wrap}
+  .nav button{
+    background:transparent;color:var(--muted);border:1px solid var(--border);
+    padding:8px 14px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:500;
+    transition:all .15s ease;
+  }
+  .nav button.active{background:var(--panel-2);color:var(--text);border-color:var(--accent)}
+  .nav button:hover{color:var(--text);border-color:var(--accent)}
+
+  main{padding:24px 32px 96px;max-width:1400px;margin:0 auto}
+  section{display:none}
+  section.active{display:block}
+
+  h2{font-size:16px;letter-spacing:.5px;text-transform:uppercase;color:var(--muted);margin:28px 0 12px;font-weight:600}
+  h2:first-child{margin-top:0}
+
+  /* project grid */
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px}
+  .card{
+    background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:18px;
+    cursor:pointer;transition:transform .15s ease,border-color .15s ease;
+    display:flex;flex-direction:column;gap:10px;
+  }
+  .card:hover{transform:translateY(-2px);border-color:var(--accent)}
+  .card h3{margin:0;font-size:18px}
+  .card .tag{font-size:11px;color:var(--muted);letter-spacing:.4px;text-transform:uppercase}
+  .card .desc{color:var(--muted);font-size:13px;line-height:1.5;margin:0}
+  .bar{height:8px;background:#0a1124;border-radius:999px;overflow:hidden;border:1px solid var(--border)}
+  .bar>span{display:block;height:100%;background:linear-gradient(90deg,var(--accent),var(--accent-2))}
+  .meta{display:flex;justify-content:space-between;font-size:12px;color:var(--muted)}
+
+  /* project detail */
+  .detail-header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:8px}
+  .detail-header h2{margin:0;text-transform:none;font-size:24px;color:var(--text);letter-spacing:0}
+  .detail-header .back{
+    background:transparent;border:1px solid var(--border);color:var(--muted);
+    padding:6px 12px;border-radius:8px;cursor:pointer;font-size:13px;
+  }
+  .detail-header .back:hover{color:var(--text);border-color:var(--accent)}
+  .tabs{display:flex;gap:4px;margin:16px 0 20px;border-bottom:1px solid var(--border)}
+  .tabs button{
+    background:transparent;color:var(--muted);border:none;border-bottom:2px solid transparent;
+    padding:10px 16px;cursor:pointer;font-size:14px;font-weight:500;
+  }
+  .tabs button.active{color:var(--text);border-bottom-color:var(--accent)}
+
+  .phase{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:14px}
+  .phase h4{margin:0 0 4px;font-size:15px}
+  .phase .sub{color:var(--muted);font-size:12px;margin-bottom:10px}
+
+  .task{
+    display:flex;align-items:flex-start;gap:10px;padding:8px 6px;border-top:1px solid var(--border);
+  }
+  .task:first-of-type{border-top:none}
+  .task input[type=checkbox]{
+    appearance:none;-webkit-appearance:none;width:18px;height:18px;border:2px solid var(--border);
+    border-radius:5px;cursor:pointer;margin:2px 0 0;flex-shrink:0;position:relative;background:#0a1124;
+  }
+  .task input[type=checkbox]:hover{border-color:var(--accent)}
+  .task input[type=checkbox]:checked{background:var(--good);border-color:var(--good)}
+  .task input[type=checkbox]:checked::after{
+    content:"";position:absolute;left:4px;top:0;width:5px;height:10px;
+    border:solid #0b1120;border-width:0 2px 2px 0;transform:rotate(45deg);
+  }
+  .task label{flex:1;font-size:14px;line-height:1.45;cursor:pointer}
+  .task.done label{text-decoration:line-through;color:var(--muted)}
+  .tool-pill{
+    display:inline-block;font-size:10px;font-weight:700;letter-spacing:.5px;
+    padding:2px 7px;border-radius:4px;margin-left:8px;text-transform:uppercase;
+    vertical-align:1px;
+  }
+  .tool-code{background:rgba(61,220,255,.15);color:var(--code)}
+  .tool-design{background:rgba(255,122,198,.15);color:var(--design)}
+  .tool-cowork{background:rgba(255,207,92,.15);color:var(--cowork)}
+  .tool-dispatch{background:rgba(124,92,255,.18);color:var(--dispatch)}
+  .tool-manual{background:rgba(138,160,194,.12);color:var(--manual)}
+
+  /* next tasks */
+  .next-list{display:flex;flex-direction:column;gap:10px}
+  .next-item{
+    background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:14px 16px;
+    display:flex;align-items:center;gap:14px;
+  }
+  .next-item .num{
+    width:28px;height:28px;border-radius:50%;background:var(--accent);color:#0b1120;
+    font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  }
+  .next-item.n2 .num{background:var(--accent-2);color:#fff}
+  .next-item.n3 .num{background:var(--warn);color:#2a1d00}
+  .next-item .body{flex:1}
+  .next-item .proj{font-size:12px;color:var(--muted);margin-bottom:2px}
+  .next-item .title{font-size:15px}
+  .next-item button{
+    background:var(--good);color:#062e1f;border:none;padding:8px 14px;border-radius:8px;
+    cursor:pointer;font-weight:700;font-size:12px;
+  }
+  .next-item button:hover{filter:brightness(1.1)}
+
+  /* notes */
+  .notes-area{
+    width:100%;min-height:420px;background:var(--panel);border:1px solid var(--border);
+    border-radius:12px;padding:18px;color:var(--text);font-family:"SF Mono",Menlo,Consolas,monospace;
+    font-size:14px;line-height:1.6;resize:vertical;
+  }
+  .notes-area:focus{outline:none;border-color:var(--accent)}
+  .save-note{font-size:12px;color:var(--muted);margin-top:6px}
+
+  /* stats row */
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:20px}
+  .stat{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:14px}
+  .stat .n{font-size:26px;font-weight:700}
+  .stat .l{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px}
+
+  /* legend */
+  .legend{display:flex;gap:10px;flex-wrap:wrap;margin:6px 0 18px;font-size:11px;color:var(--muted)}
+  .legend span{display:inline-flex;align-items:center;gap:4px}
+
+  /* add task input */
+  .add-task{display:flex;gap:8px;margin-top:10px;padding-top:10px;border-top:1px dashed var(--border)}
+  .add-task input{
+    flex:1;background:#0a1124;border:1px solid var(--border);color:var(--text);
+    padding:8px 12px;border-radius:8px;font-size:13px;
+  }
+  .add-task input:focus{outline:none;border-color:var(--accent)}
+  .add-task select{
+    background:#0a1124;border:1px solid var(--border);color:var(--text);
+    padding:8px;border-radius:8px;font-size:12px;
+  }
+  .add-task button{
+    background:var(--accent);color:#0b1120;border:none;padding:8px 14px;border-radius:8px;
+    cursor:pointer;font-weight:700;font-size:12px;
+  }
+
+  /* usage panel */
+  .usage-panel{
+    background:linear-gradient(135deg,#132240 0%,#1a1837 100%);
+    border:1px solid var(--border);border-radius:14px;padding:18px 20px;margin-bottom:20px;
+  }
+  .usage-panel .uhdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px}
+  .usage-panel h3{margin:0;font-size:14px;letter-spacing:.5px;text-transform:uppercase;color:var(--muted);font-weight:600}
+  .usage-panel .usage-status{font-size:11px;color:var(--muted)}
+  .usage-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:640px){.usage-grid{grid-template-columns:1fr}}
+  .usage-block{background:rgba(0,0,0,.25);border:1px solid var(--border);border-radius:10px;padding:14px}
+  .usage-block .ubl{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px;display:flex;justify-content:space-between}
+  .usage-block .unum{font-size:22px;font-weight:700;margin-bottom:4px}
+  .usage-block .unum small{font-size:12px;color:var(--muted);font-weight:500;margin-left:4px}
+  .usage-block .ubar{height:10px;background:#0a1124;border-radius:999px;overflow:hidden;border:1px solid var(--border);margin:8px 0}
+  .usage-block .ubar>span{display:block;height:100%;background:linear-gradient(90deg,var(--good),var(--accent));transition:width .4s ease}
+  .usage-block.warn .ubar>span{background:linear-gradient(90deg,var(--warn),#ff9f43)}
+  .usage-block.danger .ubar>span{background:linear-gradient(90deg,var(--danger),#ff9a4a)}
+  .usage-block .ufoot{font-size:11px;color:var(--muted);display:flex;justify-content:space-between;margin-top:4px}
+  .usage-edit{
+    background:transparent;border:1px solid var(--border);color:var(--muted);
+    padding:4px 10px;border-radius:6px;cursor:pointer;font-size:11px;
+  }
+  .usage-edit:hover{color:var(--accent);border-color:var(--accent)}
+  .usage-limits-form{margin-top:12px;display:none;gap:8px;flex-wrap:wrap;align-items:center}
+  .usage-limits-form.open{display:flex}
+  .usage-limits-form label{font-size:12px;color:var(--muted);display:flex;flex-direction:column;gap:4px}
+  .usage-limits-form input{
+    background:#0a1124;border:1px solid var(--border);color:var(--text);
+    padding:6px 10px;border-radius:6px;font-size:13px;width:140px;
+  }
+  .usage-limits-form button{
+    background:var(--accent);color:#0b1120;border:none;padding:7px 14px;border-radius:6px;
+    cursor:pointer;font-weight:700;font-size:12px;align-self:flex-end;
+  }
+  .usage-offline{background:rgba(255,107,107,.1);border:1px solid var(--danger);color:var(--danger);padding:10px 14px;border-radius:8px;font-size:12px;margin-bottom:14px}
+
+  footer{padding:24px 32px;color:var(--muted);font-size:12px;text-align:center}
+  .reset-btn{
+    background:transparent;border:1px solid var(--border);color:var(--muted);
+    padding:4px 10px;border-radius:6px;font-size:11px;cursor:pointer;margin-left:8px;
+  }
+  .reset-btn:hover{color:var(--danger);border-color:var(--danger)}
+</style>
+</head>
+<body>
+<header class="top">
+  <div>
+    <h1>🐟  Nick's Command Deck</h1>
+    <div class="sub">Goals, projects, and the next task that moves the needle.</div>
+  </div>
+  <div class="nav">
+    <button data-view="home" class="active">Dashboard</button>
+    <button data-view="next">Next Tasks</button>
+    <button data-view="notes">All Notes</button>
+  </div>
+</header>
+
+<main>
+  <section id="home" class="active">
+    <div id="usage-root"></div>
+    <div class="stats" id="stats"></div>
+    <div class="legend">
+      <span><span class="tool-pill tool-code">Code</span> Claude Code</span>
+      <span><span class="tool-pill tool-design">Design</span> Claude Design</span>
+      <span><span class="tool-pill tool-cowork">Cowork</span> Claude Cowork</span>
+      <span><span class="tool-pill tool-dispatch">Dispatch</span> Claude Dispatch</span>
+      <span><span class="tool-pill tool-manual">Manual</span> Hands-on / in-person</span>
+    </div>
+    <h2>Projects</h2>
+    <div class="grid" id="project-grid"></div>
+  </section>
+
+  <section id="project-detail">
+    <div class="detail-header">
+      <div>
+        <h2 id="pd-title"></h2>
+        <div class="sub" id="pd-desc" style="color:var(--muted);margin-top:4px"></div>
+      </div>
+      <button class="back" onclick="showView('home')">← Back</button>
+    </div>
+    <div class="tabs">
+      <button data-tab="tasks" class="active">Tasks</button>
+      <button data-tab="notes">Notes</button>
+    </div>
+    <div id="pd-tasks"></div>
+    <div id="pd-notes" style="display:none">
+      <textarea class="notes-area" id="pd-notes-area" placeholder="Brainstorm, jot ideas, link stuff..."></textarea>
+      <div class="save-note">Autosaves locally as you type.</div>
+    </div>
+  </section>
+
+  <section id="next">
+    <h2>Your Next 3 Moves</h2>
+    <div class="sub" style="color:var(--muted);margin-bottom:16px">Picked from your active projects, prioritized by project weight and phase.</div>
+    <div class="next-list" id="next-list"></div>
+  </section>
+
+  <section id="notes">
+    <h2>All Project Notes</h2>
+    <div id="all-notes"></div>
+  </section>
+</main>
+
+<footer>
+  Local-first. Data stored in your browser. <button class="reset-btn" onclick="resetAll()">Reset all data</button>
+</footer>
+
+<script>
+// ---------- seed data ----------
+const SEED = {
+  projects: [
+    {
+      id: "nnvr",
+      title: "Nautical Nick Visibility Report",
+      tag: "Main Project · Website → Directory → App",
+      desc: "Daily visibility reports for spearfishermen, divers, and snorkelers. Expand into chlorophyll + lifeguard directories, then mobile.",
+      priority: 1,
+      phases: [
+        { name:"Phase 1 — Core Visibility Website", sub:"Ship the daily-updating MVP",
+          tasks:[
+            { t:"Audit current repo structure and pin down tech stack", tool:"code" },
+            { t:"Source a reliable visibility data feed (NOAA / SECOORA / buoys)", tool:"cowork" },
+            { t:"Build daily data-pull script with cron/GitHub Action", tool:"code" },
+            { t:"Design homepage hero with dive-site of the day", tool:"design" },
+            { t:"Build location/region selector UI", tool:"code" },
+            { t:"Style the report card component (vis score, depth, conditions)", tool:"design" },
+            { t:"Integrate YouTube channel feed (latest Nautical Nick uploads)", tool:"code" },
+            { t:"Add SEO meta + OG images per location page", tool:"code" },
+            { t:"Deploy to prod domain + analytics", tool:"code" },
+            { t:"Promote launch on YouTube community tab + video CTA", tool:"manual" },
+          ]},
+        { name:"Phase 2 — Chlorophyll Data Directory", sub:"Reuse the scraper pattern, monetize with ads",
+          tasks:[
+            { t:"Scope data.gov + NASA MODIS chlorophyll sources", tool:"cowork" },
+            { t:"Plan directory information architecture", tool:"dispatch" },
+            { t:"Build chlorophyll scraper + cleaner pipeline", tool:"code" },
+            { t:"Design directory listing + detail page", tool:"design" },
+            { t:"Wire up ad slots (AdSense / Mediavine-ready)", tool:"code" },
+          ]},
+        { name:"Phase 3 — Lifeguard Surf Report Directory", sub:"Directory of staffed lifeguard stations w/ surf conditions",
+          tasks:[
+            { t:"Identify lifeguard station datasets by region", tool:"cowork" },
+            { t:"Merge with surf-report API (Surfline / NOAA)", tool:"code" },
+            { t:"Design station comparison UI", tool:"design" },
+            { t:"Launch beta with 1 state (FL), expand", tool:"code" },
+          ]},
+        { name:"Phase 4 — Mobile App", sub:"When web traction justifies it",
+          tasks:[
+            { t:"Decide stack: React Native vs PWA", tool:"dispatch" },
+            { t:"Wireframe core app flows (check-in, favorites, alerts)", tool:"design" },
+            { t:"Build MVP shell + API reuse", tool:"code" },
+            { t:"Beta TestFlight / Play internal track", tool:"manual" },
+          ]},
+      ]
+    },
+    {
+      id: "scorpionfish",
+      title: "Species Spotlight: Titan Scorpionfish",
+      tag: "YouTube · Long-form video",
+      desc: "DJI spearing footage ✓ · Structural layout ✓ · Script needs rewrite. Heavy on Claude Design for B-roll + infographics.",
+      priority: 2,
+      phases: [
+        { name:"Script", sub:"Kill the current script, rebuild tighter",
+          tasks:[
+            { t:"Paste existing script + outline into Cowork session for teardown", tool:"cowork" },
+            { t:"Rewrite hook (first 15 seconds)", tool:"cowork" },
+            { t:"Rewrite species identification segment", tool:"cowork" },
+            { t:"Rewrite venom / safety segment", tool:"cowork" },
+            { t:"Rewrite spearing story beat-by-beat", tool:"cowork" },
+            { t:"Final pass for voice + pacing", tool:"cowork" },
+          ]},
+        { name:"Visuals & B-Roll", sub:"Animated inserts to cover between DJI clips",
+          tasks:[
+            { t:"Infographic: scorpionfish anatomy w/ labeled spines", tool:"design" },
+            { t:"Animated range map of Titan Scorpionfish habitat", tool:"design" },
+            { t:"Venom envenomation diagram + treatment steps", tool:"design" },
+            { t:"Size-comparison animation (human vs fish)", tool:"design" },
+            { t:"Ambush-predator behavior animation loop", tool:"design" },
+            { t:"Intro title card + lower-third graphics package", tool:"design" },
+          ]},
+        { name:"Edit & Publish", sub:"Bring it home",
+           tasks:[
+            { t:"Rough cut in DaVinci/Premiere using new script", tool:"manual" },
+            { t:"Drop in infographic + B-roll animations", tool:"manual" },
+            { t:"Color + audio pass", tool:"manual" },
+            { t:"Thumbnail A/B options", tool:"design" },
+            { t:"Upload + populate description / chapters / tags", tool:"manual" },
+          ]},
+      ]
+    },
+    {
+      id: "biz",
+      title: "Online Business Ventures",
+      tag: "Side income · Fiverr / Etsy / Directories",
+      desc: "Three parallel income tracks. Pick one Fiverr service, one Etsy planner, and one directory niche to run as pilots.",
+      priority: 3,
+      phases: [
+        { name:"Fiverr — Pick 1 service to launch first", sub:"Low startup cost, fastest feedback loop",
+          tasks:[
+            { t:"Decide launch service (recommend: SEO blog writing or Resume/Cover letter)", tool:"cowork" },
+            { t:"Write gig copy + 3 package tiers", tool:"cowork" },
+            { t:"Design gig thumbnail + gallery images", tool:"design" },
+            { t:"Build 2 portfolio samples to show in gig", tool:"cowork" },
+            { t:"Publish gig + share to personal network", tool:"manual" },
+          ]},
+        { name:"Etsy — First digital planner", sub:"Aim for one SKU between $10-$20",
+          tasks:[
+            { t:"Pick niche (recommend: Biweekly Paycheck Budget Tracker — less saturated)", tool:"cowork" },
+            { t:"Competitor teardown of top 5 listings in niche", tool:"cowork" },
+            { t:"Design planner pages (cover, monthly, weekly, trackers)", tool:"design" },
+            { t:"Export to PDF + build Etsy listing mockups", tool:"design" },
+            { t:"Write SEO'd listing title + description + tags", tool:"cowork" },
+            { t:"Publish listing, price-test at $12.99", tool:"manual" },
+          ]},
+        { name:"Directory — Pick a niche", sub:"Leverage the NNVR site as your #1 directory candidate",
+          tasks:[
+            { t:"Evaluate niches: chlorophyll (already planned), tap water quality, air quality", tool:"cowork" },
+            { t:"Shortlist 3 niches → commit to 1", tool:"dispatch" },
+            { t:"Scrape + clean dataset for chosen niche", tool:"code" },
+            { t:"Design listing + comparison page", tool:"design" },
+            { t:"Launch beta, apply to ad network once traffic > 50/day", tool:"manual" },
+          ]},
+      ]
+    },
+    {
+      id: "habit",
+      title: "Gamified Habit Tracker",
+      tag: "Low priority · Exploratory",
+      desc: "On the back burner. Crowded space — only pursue if a clear angle emerges.",
+      priority: 4,
+      phases: [
+        { name:"Scope check", sub:"Decide if it's worth building",
+          tasks:[
+            { t:"Survey existing gamified habit apps — what's the gap?", tool:"cowork" },
+            { t:"Define unique angle (e.g. dive-themed XP system?)", tool:"cowork" },
+            { t:"Prototype core loop on paper before touching code", tool:"dispatch" },
+            { t:"Go / no-go decision", tool:"manual" },
+          ]},
+      ]
+    },
+  ],
+  notes: {
+    nnvr: `# NNVR running notes
+
+- Current visibility feed source: TBD
+- Target dive sites for launch: Jupiter FL, Palm Beach, Keys
+- Ad network plan: AdSense first, Mediavine at 50k sessions/mo
+- YouTube cross-promo: end-screen card on every dive video
+`,
+    scorpionfish: `# Titan Scorpionfish video
+
+- Footage: DJI POV of the spear
+- Structural layout: done
+- Script: needs full rewrite — don't love the current tone
+- Infographic ideas: anatomy, venom, range map, size comparison
+`,
+    biz: `# Business ideas — master brainstorm
+
+## FIVERR
+- Resume building and cover letter writing
+- SEO
+- SEO blog writing
+- Local business website building
+- Local business social media managing and marketing
+- Logo and brand kit packages
+- Email marketing campaign setups
+- E-commerce SEO
+
+## ETSY
+The gist: people have an organization problem. They come to Etsy for a planner, $10-$20.
+Sell digital products.
+
+- Budget planner
+- Travel planner
+- Biweekly + monthly paycheck budget tracker
+- Gamified life website
+- Wedding planner
+- Event planner?
+- School year planner
+- Study planner
+
+Shops to study:
+- TheWeeklyCrew
+- Abbyorganizes
+- PlanOrganizedCo
+- 255designsCo
+- RanchyTreasures
+- SimplyorganizedPro
+- ExclusiveDesignLab
+- PrioriDigitalStudio
+
+## ONLINE DIRECTORY
+Build a website that's an online directory — a library of links. Run ads on it.
+Help people save time, save money, or make money.
+Niche = deal-breaker specs. Not "nursing homes" but "nursing homes for dementia."
+Example 2: ADA-accessible bathroom contractor.
+
+Data.gov has raw data + a terrible AI. Pick a niche, scrape, clean, make appealing.
+Examples: tap water quality, air quality.
+
+I could do this with chlorophyll data on the site I'm already making.
+
+Candidate niches:
+- Compare nursing homes
+- Compare assisted living
+- Compare real estate?
+- Compare student loans
+- Compare scholarships
+- AI tools and their prices
+- HVAC price comparison
+- General contractors
+- Portapotties
+- Bounce houses
+- Goat herd services
+- Party ponies
+- Event directories (local-area specific)
+- Singles meet-up events
+
+Reference sites: aplaceformom.com, gasbuddy
+`,
+    habit: `# Habit tracker — notes
+
+- Probably a saturated space; only pursue with a clear angle.
+- Possible hook: dive-themed XP, underwater aesthetic, tie into NNVR ecosystem.
+`,
+  }
+};
+
+// ---------- state ----------
+const STORAGE_KEY = "nick_command_deck_v1";
+let state = load();
+
+function load(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(!raw) return freshState();
+    const s = JSON.parse(raw);
+    // migrate: ensure every seed task exists
+    const fresh = freshState();
+    for(const p of fresh.projects){
+      const existing = s.projects.find(x=>x.id===p.id);
+      if(!existing){ s.projects.push(p); continue; }
+      // merge phases by name
+      for(const ph of p.phases){
+        const ex = existing.phases.find(x=>x.name===ph.name);
+        if(!ex){ existing.phases.push(ph); continue; }
+        for(const task of ph.tasks){
+          if(!ex.tasks.find(x=>x.t===task.t)) ex.tasks.push({...task,done:false});
+        }
+      }
+    }
+    s.notes = s.notes || {};
+    for(const k of Object.keys(fresh.notes)) if(!(k in s.notes)) s.notes[k]=fresh.notes[k];
+    return s;
+  }catch(e){return freshState()}
+}
+function freshState(){
+  const copy = JSON.parse(JSON.stringify(SEED));
+  for(const p of copy.projects) for(const ph of p.phases) for(const t of ph.tasks) t.done=false;
+  return copy;
+}
+function save(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+function resetAll(){
+  if(!confirm("Wipe all progress and notes? This cannot be undone.")) return;
+  localStorage.removeItem(STORAGE_KEY);
+  state = freshState(); render();
+}
+
+// ---------- helpers ----------
+function toolPill(tool){
+  const labels = {code:"Code",design:"Design",cowork:"Cowork",dispatch:"Dispatch",manual:"Manual"};
+  return `<span class="tool-pill tool-${tool}">${labels[tool]||tool}</span>`;
+}
+function projectProgress(p){
+  let done=0,total=0;
+  for(const ph of p.phases) for(const t of ph.tasks){ total++; if(t.done) done++; }
+  return {done,total,pct: total? Math.round(done/total*100) : 0};
+}
+function totalStats(){
+  let done=0,total=0;
+  for(const p of state.projects) for(const ph of p.phases) for(const t of ph.tasks){total++; if(t.done) done++;}
+  return {done,total,pct: total? Math.round(done/total*100) : 0, projects: state.projects.length};
+}
+
+// ---------- render ----------
+function render(){ renderStats(); renderGrid(); renderNextTasks(); renderAllNotes(); save(); }
+
+function renderStats(){
+  const s = totalStats();
+  const el = document.getElementById("stats");
+  el.innerHTML = `
+    <div class="stat"><div class="n">${s.projects}</div><div class="l">Active projects</div></div>
+    <div class="stat"><div class="n">${s.done}/${s.total}</div><div class="l">Tasks complete</div></div>
+    <div class="stat"><div class="n">${s.pct}%</div><div class="l">Overall progress</div></div>
+    <div class="stat"><div class="n" style="color:var(--accent)">${nextTasks().length}</div><div class="l">Up next</div></div>
+  `;
+}
+
+function renderGrid(){
+  const el = document.getElementById("project-grid");
+  el.innerHTML = state.projects.map(p=>{
+    const pr = projectProgress(p);
+    return `
+      <div class="card" onclick="openProject('${p.id}')">
+        <div class="tag">${p.tag}</div>
+        <h3>${p.title}</h3>
+        <p class="desc">${p.desc}</p>
+        <div class="bar"><span style="width:${pr.pct}%"></span></div>
+        <div class="meta"><span>${pr.done} / ${pr.total} tasks</span><span>${pr.pct}%</span></div>
+      </div>
+    `;
+  }).join("");
+}
+
+let activeProjectId = null;
+function openProject(id){
+  activeProjectId = id;
+  const p = state.projects.find(x=>x.id===id);
+  document.getElementById("pd-title").textContent = p.title;
+  document.getElementById("pd-desc").textContent = p.desc;
+  renderProjectTasks();
+  document.getElementById("pd-notes-area").value = state.notes[id] || "";
+  document.querySelectorAll("#project-detail .tabs button").forEach(b=>b.classList.toggle("active", b.dataset.tab==="tasks"));
+  document.getElementById("pd-tasks").style.display="block";
+  document.getElementById("pd-notes").style.display="none";
+  showView("project-detail");
+}
+
+function renderProjectTasks(){
+  const p = state.projects.find(x=>x.id===activeProjectId);
+  const host = document.getElementById("pd-tasks");
+  host.innerHTML = p.phases.map((ph,phIdx)=>{
+    const tasks = ph.tasks.map((t,tIdx)=>`
+      <div class="task ${t.done?'done':''}">
+        <input type="checkbox" ${t.done?'checked':''} onchange="toggleTask('${p.id}',${phIdx},${tIdx})" />
+        <label onclick="toggleTask('${p.id}',${phIdx},${tIdx})">${escapeHTML(t.t)} ${toolPill(t.tool)}</label>
+      </div>
+    `).join("");
+    return `
+      <div class="phase">
+        <h4>${escapeHTML(ph.name)}</h4>
+        <div class="sub">${escapeHTML(ph.sub||"")}</div>
+        ${tasks}
+        <div class="add-task">
+          <input id="add-${p.id}-${phIdx}" placeholder="Add a task..." onkeydown="if(event.key==='Enter')addTask('${p.id}',${phIdx})" />
+          <select id="sel-${p.id}-${phIdx}">
+            <option value="code">Code</option>
+            <option value="design">Design</option>
+            <option value="cowork">Cowork</option>
+            <option value="dispatch">Dispatch</option>
+            <option value="manual">Manual</option>
+          </select>
+          <button onclick="addTask('${p.id}',${phIdx})">Add</button>
+        </div>
+      </div>
+    `;
+  }).join("");
+}
+
+function toggleTask(pid, phIdx, tIdx){
+  const p = state.projects.find(x=>x.id===pid);
+  p.phases[phIdx].tasks[tIdx].done = !p.phases[phIdx].tasks[tIdx].done;
+  renderProjectTasks(); renderStats(); renderNextTasks(); save();
+  // also update grid progress under the hood
+  renderGrid();
+}
+function addTask(pid, phIdx){
+  const input = document.getElementById(`add-${pid}-${phIdx}`);
+  const sel = document.getElementById(`sel-${pid}-${phIdx}`);
+  const v = input.value.trim(); if(!v) return;
+  const p = state.projects.find(x=>x.id===pid);
+  p.phases[phIdx].tasks.push({t:v,tool:sel.value,done:false});
+  input.value="";
+  render(); openProject(pid);
+}
+
+function nextTasks(limit=3){
+  const out = [];
+  const sorted = [...state.projects].sort((a,b)=>a.priority-b.priority);
+  for(const p of sorted){
+    for(const ph of p.phases){
+      for(const t of ph.tasks){
+        if(!t.done){ out.push({project:p, phase:ph, task:t}); break; }
+      }
+      if(out.length && out[out.length-1].project.id===p.id) break;
+    }
+    if(out.length>=limit) break;
+  }
+  // fill remaining slots from any incomplete tasks
+  if(out.length < limit){
+    for(const p of sorted){
+      for(const ph of p.phases){
+        for(const t of ph.tasks){
+          if(t.done) continue;
+          if(out.find(x=>x.task===t)) continue;
+          out.push({project:p,phase:ph,task:t});
+          if(out.length>=limit) break;
+        }
+        if(out.length>=limit) break;
+      }
+      if(out.length>=limit) break;
+    }
+  }
+  return out.slice(0,limit);
+}
+
+function renderNextTasks(){
+  const list = nextTasks(3);
+  const el = document.getElementById("next-list");
+  if(!list.length){
+    el.innerHTML = `<div class="next-item"><div class="body"><div class="title">🎉 Everything's checked. Add a new task or ship something.</div></div></div>`;
+    return;
+  }
+  el.innerHTML = list.map((n,i)=>`
+    <div class="next-item n${i+1}">
+      <div class="num">${i+1}</div>
+      <div class="body">
+        <div class="proj">${escapeHTML(n.project.title)} · ${escapeHTML(n.phase.name)}</div>
+        <div class="title">${escapeHTML(n.task.t)} ${toolPill(n.task.tool)}</div>
+      </div>
+      <button onclick="completeFromNext('${n.project.id}','${escapeAttr(n.task.t)}')">Mark done</button>
+    </div>
+  `).join("");
+}
+
+function completeFromNext(pid, taskText){
+  const p = state.projects.find(x=>x.id===pid);
+  outer: for(const ph of p.phases){
+    for(const t of ph.tasks){
+      if(t.t===taskText){ t.done=true; break outer; }
+    }
+  }
+  render();
+}
+
+function renderAllNotes(){
+  const el = document.getElementById("all-notes");
+  el.innerHTML = state.projects.map(p=>`
+    <div style="margin-bottom:20px">
+      <h3 style="margin:0 0 8px">${escapeHTML(p.title)}</h3>
+      <textarea class="notes-area" data-note="${p.id}" placeholder="Notes for ${escapeHTML(p.title)}...">${escapeHTML(state.notes[p.id]||"")}</textarea>
+    </div>
+  `).join("");
+  el.querySelectorAll("textarea[data-note]").forEach(ta=>{
+    ta.addEventListener("input",()=>{ state.notes[ta.dataset.note]=ta.value; save(); });
+  });
+}
+
+// ---------- nav ----------
+function showView(v){
+  document.querySelectorAll("main > section").forEach(s=>s.classList.remove("active"));
+  document.getElementById(v).classList.add("active");
+  document.querySelectorAll("header .nav button").forEach(b=>{
+    if(!b.dataset.view) return;
+    b.classList.toggle("active", b.dataset.view===v || (v==="project-detail" && b.dataset.view==="home"));
+  });
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+document.querySelectorAll("header .nav button").forEach(b=>{
+  b.addEventListener("click",()=>showView(b.dataset.view));
+});
+
+// project detail tabs
+document.querySelectorAll("#project-detail .tabs button").forEach(b=>{
+  b.addEventListener("click",()=>{
+    document.querySelectorAll("#project-detail .tabs button").forEach(x=>x.classList.remove("active"));
+    b.classList.add("active");
+    const tab = b.dataset.tab;
+    document.getElementById("pd-tasks").style.display = tab==="tasks" ? "block" : "none";
+    document.getElementById("pd-notes").style.display = tab==="notes" ? "block" : "none";
+  });
+});
+document.getElementById("pd-notes-area").addEventListener("input",e=>{
+  if(!activeProjectId) return;
+  state.notes[activeProjectId] = e.target.value;
+  save();
+});
+
+function escapeHTML(s){return (s||"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+function escapeAttr(s){return (s||"").replace(/'/g,"\\'").replace(/"/g,"&quot;")}
+
+render();
+
+// ---------- usage panel ----------
+function fmtNum(n){
+  if(n>=1e9) return (n/1e9).toFixed(2)+"B";
+  if(n>=1e6) return (n/1e6).toFixed(2)+"M";
+  if(n>=1e3) return (n/1e3).toFixed(1)+"k";
+  return String(n);
+}
+function fmtResetCountdown(isoStr){
+  const t = new Date(isoStr) - new Date();
+  if(t<=0) return "now";
+  const h = Math.floor(t/3600000);
+  const m = Math.floor((t%3600000)/60000);
+  const d = Math.floor(h/24);
+  if(d>=1) return `${d}d ${h%24}h`;
+  if(h>=1) return `${h}h ${m}m`;
+  return `${m}m`;
+}
+function fmtResetAt(isoStr){
+  const d = new Date(isoStr);
+  return d.toLocaleString(undefined,{weekday:"short",month:"short",day:"numeric",hour:"numeric",minute:"2-digit"});
+}
+function severity(pct){ return pct>=90 ? "danger" : pct>=70 ? "warn" : ""; }
+
+function renderUsage(data, err){
+  const root = document.getElementById("usage-root");
+  if(err){
+    root.innerHTML = `<div class="usage-offline">⚠ Usage server offline — run <code>node dashboard/server.js</code> from the project root to see live token stats.</div>`;
+    return;
+  }
+  const {daily, weekly, totals, activeSessionsToday, limits} = data;
+  root.innerHTML = `
+    <div class="usage-panel">
+      <div class="uhdr">
+        <h3>🔋 Claude Token Usage</h3>
+        <div class="usage-status">
+          ${fmtNum(totals.tokens)} tokens all-time · ${activeSessionsToday} session${activeSessionsToday===1?"":"s"} today
+          <button class="usage-edit" onclick="toggleLimitsForm()">Edit limits</button>
+        </div>
+      </div>
+      <div class="usage-grid">
+        <div class="usage-block ${severity(daily.used)}">
+          <div class="ubl"><span>Today</span><span>${daily.used}%</span></div>
+          <div class="unum">${fmtNum(daily.tokens)}<small>/ ${fmtNum(daily.limit)} tokens</small></div>
+          <div class="ubar"><span style="width:${daily.used}%"></span></div>
+          <div class="ufoot">
+            <span>${fmtNum(daily.remaining)} remaining</span>
+            <span>Resets in ${fmtResetCountdown(daily.resetAt)} · ${fmtResetAt(daily.resetAt)}</span>
+          </div>
+        </div>
+        <div class="usage-block ${severity(weekly.used)}">
+          <div class="ubl"><span>This Week</span><span>${weekly.used}%</span></div>
+          <div class="unum">${fmtNum(weekly.tokens)}<small>/ ${fmtNum(weekly.limit)} tokens</small></div>
+          <div class="ubar"><span style="width:${weekly.used}%"></span></div>
+          <div class="ufoot">
+            <span>${fmtNum(weekly.remaining)} remaining</span>
+            <span>Resets in ${fmtResetCountdown(weekly.resetAt)} · ${fmtResetAt(weekly.resetAt)}</span>
+          </div>
+        </div>
+      </div>
+      <div id="limits-form" class="usage-limits-form">
+        <label>Daily limit (tokens)<input type="number" id="lim-daily" value="${limits.dailyTokens}" step="10000" /></label>
+        <label>Weekly limit (tokens)<input type="number" id="lim-weekly" value="${limits.weeklyTokens}" step="50000" /></label>
+        <button onclick="saveLimits()">Save</button>
+      </div>
+    </div>
+  `;
+}
+function toggleLimitsForm(){ document.getElementById("limits-form")?.classList.toggle("open"); }
+async function saveLimits(){
+  const dailyTokens = +document.getElementById("lim-daily").value;
+  const weeklyTokens = +document.getElementById("lim-weekly").value;
+  try{
+    await fetch("/api/limits",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({dailyTokens,weeklyTokens})});
+    loadUsage();
+  }catch(e){ alert("Could not save limits — is the usage server running?"); }
+}
+async function loadUsage(){
+  try{
+    const r = await fetch("/api/usage",{cache:"no-store"});
+    if(!r.ok) throw new Error("bad status");
+    renderUsage(await r.json(), null);
+  }catch(e){ renderUsage(null, e); }
+}
+loadUsage();
+setInterval(loadUsage, 60_000);
+</script>
+</body>
+</html>

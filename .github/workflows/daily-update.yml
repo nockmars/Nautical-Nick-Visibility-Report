@@ -1,0 +1,55 @@
+name: Daily Data Update
+
+on:
+  schedule:
+    # 8:30 AM PDT = 15:30 UTC — runs after satellite data is refreshed
+    - cron: '30 15 * * *'
+  workflow_dispatch:
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Fetch satellite chlorophyll data
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: node scripts/fetch-satellite.js
+
+      - name: Scrape JustGetWet report
+        run: node scripts/scrape-justgetwet.js
+
+      - name: Generate AI summary
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: node scripts/generate-summary.js
+
+      - name: Send SMS alerts
+        env:
+          TWILIO_ACCOUNT_SID:  ${{ secrets.TWILIO_ACCOUNT_SID }}
+          TWILIO_AUTH_TOKEN:   ${{ secrets.TWILIO_AUTH_TOKEN }}
+          TWILIO_PHONE_NUMBER: ${{ secrets.TWILIO_PHONE_NUMBER }}
+        run: node scripts/send-alerts.js
+
+      - name: Commit and push updated data
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "GitHub Actions"
+          git add data/conditions.json data/history.json
+          git diff --staged --quiet || git commit -m "📊 Daily update $(date -u +%Y-%m-%d)"
+          git push

@@ -1,0 +1,38 @@
+{
+  "date": "2026-04-17",
+  "snapshots": [
+    {
+      "time": "07:00",
+      "label": "7:00 AM",
+      "imagePath": "data/snapshots/2026-04-17-0700.jpg",
+      "rating": "GOOD",
+      "visibility": 22,
+      "description": "Right-front and right-back pilings clearly visible. Moderate morning surge settling. Water showing blue-green clarity.",
+      "pillingsVisible": ["right-front-4ft", "right-back-11ft"],
+      "captured": false,
+      "isLatest": false
+    },
+    {
+      "time": "09:00",
+      "label": "9:00 AM",
+      "imagePath": "data/snapshots/2026-04-17-0900.jpg",
+      "rating": "EXCELLENT",
+      "visibility": 30,
+      "description": "All four pilings visible including far-left at 30ft. Surge has fully settled. Exceptional deep-blue clarity.",
+      "pillingsVisible": ["right-front-4ft", "right-back-11ft", "back-left-14ft", "far-left-30ft"],
+      "captured": false,
+      "isLatest": true
+    },
+    {
+      "time": "12:00",
+      "label": "12:00 PM",
+      "imagePath": null,
+      "rating": null,
+      "visibility": null,
+      "description": null,
+      "pillingsVisible": [],
+      "captured": false,
+      "isLatest": false
+    }
+  ]
+}

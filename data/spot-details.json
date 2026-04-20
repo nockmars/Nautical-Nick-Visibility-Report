@@ -1,0 +1,669 @@
+{
+  "_comment": "Premium per-spot content: spearing rating, seasonal fish abundance, hunting tips, 14-day AI visibility prediction. Paywalled on the frontend.",
+  "spots": {
+    "coronado": {
+      "spearingRating": 2,
+      "summary": "Sand-bottom beach break south of the bay mouth. Low-visibility, low-structure. Okay for surfperch and occasional halibut drifts.",
+      "season": {
+        "spring":  ["California Halibut", "Barred Surfperch", "Corbina"],
+        "summer":  ["California Halibut", "Corbina", "Leopard Shark"],
+        "fall":    ["Yellowfin Croaker", "Halibut", "Corbina"],
+        "winter":  ["Barred Surfperch", "Spotfin Croaker"]
+      },
+      "huntingTips": [
+        "Halibut lie on sand transitions — look for color changes at 8–15ft.",
+        "Approach low and slow, shoot behind the gill plate before they spook.",
+        "Best window is an hour after dawn on a flooding tide."
+      ],
+      "prediction14Day": "Expect moderate 10–14ft visibility to hold this week with a drop Friday as a short-period swell arrives. Chlorophyll trending slightly up."
+    },
+    "imperial-beach": {
+      "spearingRating": 1,
+      "summary": "Often impacted by Tijuana River plume — check closures. Poor clarity most of the year.",
+      "season": {
+        "spring":  ["Halibut", "Surfperch"],
+        "summer":  ["Halibut", "Corbina"],
+        "fall":    ["Yellowfin Croaker"],
+        "winter":  ["Barred Surfperch"]
+      },
+      "huntingTips": [
+        "Always check TJ River plume and county health advisories before entering.",
+        "Stick to the north end closer to the pier for cleaner water.",
+        "Halibut drifts on the outside sand at 10–15ft after a north swell."
+      ],
+      "prediction14Day": "Visibility likely to stay 8–12ft with possible closures after rain events. Avoid following any south swell."
+    },
+    "point-loma": {
+      "spearingRating": 5,
+      "summary": "Classic San Diego kelp spearing. Deep reef, big fish, real structure. The stand-out spot in the county for size.",
+      "season": {
+        "spring":  ["White Seabass", "Calico Bass", "Lingcod", "Sheephead"],
+        "summer":  ["Yellowtail", "White Seabass", "Calico Bass", "Halibut", "Sheephead"],
+        "fall":    ["Yellowtail", "Bonito", "Calico Bass", "Sheephead"],
+        "winter":  ["Lingcod", "Sheephead", "Calico Bass"]
+      },
+      "huntingTips": [
+        "White seabass: dawn patrol at the edge of kelp stringers. Listen for croaks under the canopy.",
+        "Yellowtail: look for bait balls and diving birds on the outside kelp lines in summer.",
+        "Set up ambush behind kelp — don't chase. Breathe up long, stay flat on the bottom.",
+        "Lingcod: bottom at 50–70ft in the rock piles. Aim for the head, they don't move."
+      ],
+      "prediction14Day": "Strong clarity trend continuing 22–28ft through mid-week. Possible dip Friday–Saturday with SW swell. Excellent white seabass window opening next week."
+    },
+    "sunset-cliffs": {
+      "spearingRating": 4,
+      "summary": "Accessible reef structure right off the cliffs. Solid bass and sheephead spot with occasional bigger visitors.",
+      "season": {
+        "spring":  ["Calico Bass", "Sheephead", "Lingcod"],
+        "summer":  ["Calico Bass", "Sheephead", "White Seabass", "Halibut"],
+        "fall":    ["Calico Bass", "Yellowtail", "Sheephead"],
+        "winter":  ["Sheephead", "Lingcod", "Calico Bass"]
+      },
+      "huntingTips": [
+        "Time your entry on a low slack — the cliff stairs are brutal on a rising tide.",
+        "Work the kelp edges in 15–20ft for calico bass ambush shots.",
+        "Sheephead hang near rock piles — males guard territory, approach from above."
+      ],
+      "prediction14Day": "Holding 18–24ft through the weekend. Chlorophyll low and dropping. Strong window Wednesday–Friday."
+    },
+    "ocean-beach": {
+      "spearingRating": 2,
+      "summary": "Sandy beach break with OB Pier. Better for halibut drifts than reef fish.",
+      "season": {
+        "spring":  ["Halibut", "Surfperch"],
+        "summer":  ["Halibut", "Corbina", "Leopard Shark"],
+        "fall":    ["Yellowfin Croaker", "Halibut"],
+        "winter":  ["Barred Surfperch"]
+      },
+      "huntingTips": [
+        "Drift parallel to the pier pilings for halibut ambushes.",
+        "Morning glass-off windows are rare but golden.",
+        "Watch for riptides around the jetty."
+      ],
+      "prediction14Day": "Typical 12–16ft through the period. Short-period swell midweek will knock clarity down temporarily."
+    },
+    "mission-beach": {
+      "spearingRating": 2,
+      "summary": "Long stretch of sand. Halibut on the drifts, little reef structure.",
+      "season": {
+        "spring":  ["Halibut", "Surfperch"],
+        "summer":  ["Halibut", "Corbina", "Leopard Shark"],
+        "fall":    ["Yellowfin Croaker", "Halibut"],
+        "winter":  ["Barred Surfperch"]
+      },
+      "huntingTips": [
+        "Drift the sand in 10–15ft looking for halibut outlines.",
+        "Corbina cruise the inside shore break in summer — stalk them on the surface.",
+        "Avoid weekend afternoons due to swim traffic."
+      ],
+      "prediction14Day": "Expect 12–16ft with dips after weekend surf events."
+    },
+    "mission-bay": {
+      "spearingRating": 1,
+      "summary": "Protected bay — flat water, low visibility. Spearfishing is generally not the move here. Good for halibut drifts in the channels.",
+      "season": {
+        "spring":  ["Halibut", "Spotted Bay Bass"],
+        "summer":  ["Halibut", "Spotted Bay Bass", "Leopard Shark"],
+        "fall":    ["Halibut", "Spotted Bay Bass"],
+        "winter":  ["Spotted Bay Bass"]
+      },
+      "huntingTips": [
+        "Work channel edges on incoming tide.",
+        "Visibility rarely exceeds 10ft — use feel and close-range shots.",
+        "Check bay regulations — not all areas open to spearfishing."
+      ],
+      "prediction14Day": "6–10ft consistently. Bay clarity is tide-driven, not swell-driven."
+    },
+    "pacific-beach": {
+      "spearingRating": 2,
+      "summary": "Crescent Bay sand with Crystal Pier. Halibut spot.",
+      "season": {
+        "spring":  ["Halibut", "Surfperch"],
+        "summer":  ["Halibut", "Corbina"],
+        "fall":    ["Yellowfin Croaker", "Halibut"],
+        "winter":  ["Barred Surfperch"]
+      },
+      "huntingTips": [
+        "Drift between Crystal Pier and the Tourmaline jetty.",
+        "Target sand transition lines in 10–20ft."
+      ],
+      "prediction14Day": "Holding 14–18ft with midweek dip expected."
+    },
+    "bird-rock": {
+      "spearingRating": 3,
+      "summary": "Small reef headland between PB and La Jolla. Decent calico and sheephead spot with tricky entries.",
+      "season": {
+        "spring":  ["Calico Bass", "Sheephead"],
+        "summer":  ["Calico Bass", "Sheephead", "Halibut"],
+        "fall":    ["Calico Bass", "Sheephead", "Bonito"],
+        "winter":  ["Sheephead", "Calico Bass"]
+      },
+      "huntingTips": [
+        "Entry at the north access point on a low tide.",
+        "Work the reef edges in 15–20ft.",
+        "Stay alert to surge — rocks come up fast."
+      ],
+      "prediction14Day": "16–20ft expected. Chlorophyll elevated slightly midweek."
+    },
+    "windansea": {
+      "spearingRating": 3,
+      "summary": "Famous surf spot with reef structure. Good bass and sheephead spot when swell allows.",
+      "season": {
+        "spring":  ["Calico Bass", "Sheephead"],
+        "summer":  ["Calico Bass", "Sheephead", "Halibut"],
+        "fall":    ["Calico Bass", "Yellowtail", "Sheephead"],
+        "winter":  ["Sheephead", "Calico Bass"]
+      },
+      "huntingTips": [
+        "Only dive here when the surf is small — Windansea gets heavy fast.",
+        "Work the south reef for calicos in 15–25ft.",
+        "Avoid surf crowd zones — respect the lineup."
+      ],
+      "prediction14Day": "18–22ft trending up. Small incoming swell could push clarity higher."
+    },
+    "la-jolla-cove": {
+      "spearingRating": 3,
+      "summary": "La Jolla Ecological Reserve — NO SPEARFISHING INSIDE THE RESERVE. Marked as 'scenic' for divers and swimmers. For adjacent legal zones, move south toward Marine Room.",
+      "season": {
+        "spring":  ["No take — protected"],
+        "summer":  ["No take — protected"],
+        "fall":    ["No take — protected"],
+        "winter":  ["No take — protected"]
+      },
+      "huntingTips": [
+        "Know the reserve boundaries — enforcement is serious here.",
+        "Legal spearfishing begins outside the reserve line south of Marine Room.",
+        "Use this spot for scouting and training freedives, not for shots."
+      ],
+      "prediction14Day": "25–30ft continuing through week. Top clarity window of the whole coast."
+    },
+    "underwater-park": {
+      "spearingRating": 2,
+      "summary": "La Jolla Underwater Park & Ecological Reserve — NO SPEARFISHING. Legendary kelp forest visibility. Photograph only, train here.",
+      "season": {
+        "spring":  ["No take — protected"],
+        "summer":  ["No take — protected"],
+        "fall":    ["No take — protected"],
+        "winter":  ["No take — protected"]
+      },
+      "huntingTips": [
+        "This is a no-take reserve. Use it for free diving practice and scouting.",
+        "Nearby Point Loma and south La Jolla Shores sand channels are legal.",
+        "Respect the rules — this reserve is why San Diego has so much fish density."
+      ],
+      "prediction14Day": "Peak clarity 28–34ft forecast through mid-week. Likely cleanest water in the region."
+    },
+    "torrey-pines": {
+      "spearingRating": 3,
+      "summary": "Long beach at the base of the cliffs. Sandy with occasional rock outcrops. Good for halibut drifts with sporadic reef fish.",
+      "season": {
+        "spring":  ["Halibut", "Surfperch"],
+        "summer":  ["Halibut", "Leopard Shark", "Corbina"],
+        "fall":    ["Halibut", "Yellowfin Croaker"],
+        "winter":  ["Barred Surfperch"]
+      },
+      "huntingTips": [
+        "Long walks down the beach reward you with empty water.",
+        "Target sand-to-rock transitions for halibut.",
+        "Watch tide — access gets cut off on a big high."
+      ],
+      "prediction14Day": "18–22ft expected, trending stable."
+    },
+    "del-mar": {
+      "spearingRating": 2,
+      "summary": "Beach break with occasional cobble. Mostly halibut and surfperch. 15th Street reef holds some calicos.",
+      "season": {
+        "spring":  ["Halibut", "Surfperch"],
+        "summer":  ["Halibut", "Corbina"],
+        "fall":    ["Halibut", "Yellowfin Croaker"],
+        "winter":  ["Barred Surfperch"]
+      },
+      "huntingTips": [
+        "Work 15th Street reef zones for scattered structure.",
+        "Sand drifts produce halibut in 10–18ft."
+      ],
+      "prediction14Day": "14–18ft expected, with dip after weekend swell."
+    },
+    "solana-beach": {
+      "spearingRating": 3,
+      "summary": "Small reef pockets under the bluffs. Fletcher Cove entry. Decent calico and sheephead spot.",
+      "season": {
+        "spring":  ["Calico Bass", "Sheephead"],
+        "summer":  ["Calico Bass", "Sheephead", "Halibut"],
+        "fall":    ["Calico Bass", "Sheephead"],
+        "winter":  ["Sheephead"]
+      },
+      "huntingTips": [
+        "Enter at Fletcher Cove and swim north along the reef edges.",
+        "Calicos ambush from reef holes in 15–25ft.",
+        "Watch for swell — rocks come up quickly."
+      ],
+      "prediction14Day": "16–20ft expected through the week."
+    },
+    "encinitas": {
+      "spearingRating": 3,
+      "summary": "Swami's and Moonlight reef zones offer real structure. Good bass, sheephead, and rare white seabass encounters.",
+      "season": {
+        "spring":  ["Calico Bass", "Sheephead", "White Seabass"],
+        "summer":  ["Calico Bass", "Sheephead", "Yellowtail", "Halibut"],
+        "fall":    ["Calico Bass", "Sheephead", "Bonito"],
+        "winter":  ["Sheephead", "Lingcod", "Calico Bass"]
+      },
+      "huntingTips": [
+        "Swami's reef zones in 20–30ft hold the larger calicos.",
+        "Dawn patrols produce the best chance at a visiting white seabass.",
+        "Moonlight Beach entry is the easiest."
+      ],
+      "prediction14Day": "18–24ft trending up. Chlorophyll dropping nicely."
+    },
+    "carlsbad": {
+      "spearingRating": 2,
+      "summary": "Mostly sand with small reef sections near Terramar. Halibut spot with occasional calicos.",
+      "season": {
+        "spring":  ["Halibut", "Surfperch"],
+        "summer":  ["Halibut", "Corbina", "Calico Bass"],
+        "fall":    ["Halibut", "Calico Bass"],
+        "winter":  ["Barred Surfperch"]
+      },
+      "huntingTips": [
+        "Terramar reef in 15–20ft holds the few calicos in the area.",
+        "Power plant outfall zone is closed to spearfishing.",
+        "Sandy drifts produce halibut throughout the year."
+      ],
+      "prediction14Day": "Holding 12–16ft with chlorophyll slightly elevated."
+    },
+
+    "seal-beach": {
+      "spearingRating": 1,
+      "summary": "Bay-influenced flat sand. Very low visibility, limited spearing value.",
+      "season": {
+        "spring":  ["Halibut", "Surfperch"],
+        "summer":  ["Halibut", "Corbina"],
+        "fall":    ["Yellowfin Croaker", "Halibut"],
+        "winter":  ["Barred Surfperch"]
+      },
+      "huntingTips": [
+        "River mouth runoff keeps clarity low — pick your days.",
+        "Halibut drifts on the outside sand bars."
+      ],
+      "prediction14Day": "8–12ft expected; bay runoff driven."
+    },
+    "huntington-beach": {
+      "spearingRating": 2,
+      "summary": "Long sand beach with the pier. Halibut drifts and surfperch.",
+      "season": {
+        "spring":  ["Halibut", "Surfperch"],
+        "summer":  ["Halibut", "Corbina"],
+        "fall":    ["Halibut", "Yellowfin Croaker"],
+        "winter":  ["Barred Surfperch"]
+      },
+      "huntingTips": [
+        "Work the pier pilings for halibut ambushes.",
+        "North of the pier cleans up faster on a south swell."
+      ],
+      "prediction14Day": "10–14ft expected through the period."
+    },
+    "newport-beach": {
+      "spearingRating": 3,
+      "summary": "Corona del Mar jetty and the Newport reef zones offer legitimate structure.",
+      "season": {
+        "spring":  ["Calico Bass", "Sheephead", "Halibut"],
+        "summer":  ["Calico Bass", "Sheephead", "Halibut"],
+        "fall":    ["Calico Bass", "Sheephead", "Bonito"],
+        "winter":  ["Sheephead", "Calico Bass"]
+      },
+      "huntingTips": [
+        "Work the jetty edges in 15–25ft.",
+        "Sheephead hold tight to the rocks — approach from above."
+      ],
+      "prediction14Day": "14–18ft trending up this week."
+    },
+    "corona-del-mar": {
+      "spearingRating": 4,
+      "summary": "Protected cove with solid reef. Marine protected area boundaries must be watched carefully.",
+      "season": {
+        "spring":  ["Calico Bass", "Sheephead", "Halibut"],
+        "summer":  ["Calico Bass", "Sheephead", "Halibut", "Yellowtail"],
+        "fall":    ["Calico Bass", "Sheephead", "Bonito"],
+        "winter":  ["Sheephead", "Calico Bass"]
+      },
+      "huntingTips": [
+        "Outside the MPA line — check CDFW boundary map before you shoot.",
+        "Big calicos in the kelp edges 20–30ft.",
+        "Sheephead patrol rock piles — look for the big black-heads."
+      ],
+      "prediction14Day": "Solid 18–22ft through the week."
+    },
+    "crystal-cove": {
+      "spearingRating": 4,
+      "summary": "Beautiful reef structure. Portions are MPA — know the boundaries.",
+      "season": {
+        "spring":  ["Calico Bass", "Sheephead", "Halibut"],
+        "summer":  ["Calico Bass", "Yellowtail", "Sheephead", "White Seabass"],
+        "fall":    ["Calico Bass", "Yellowtail", "Bonito"],
+        "winter":  ["Sheephead", "Calico Bass", "Lingcod"]
+      },
+      "huntingTips": [
+        "Legal zone is outside the state MPA — verify before every dive.",
+        "Kelp stringers hold yellowtail in summer.",
+        "Work reef holes for calicos in 20–30ft."
+      ],
+      "prediction14Day": "20–24ft trending up with clean chlorophyll signal."
+    },
+    "laguna-beach": {
+      "spearingRating": 5,
+      "summary": "Entire Laguna coast is MPA (no take) except for narrow zones. Verify before you dive — or use adjacent Salt Creek/Aliso. For viewing, it's unbeatable.",
+      "season": {
+        "spring":  ["Protected — check MPAs"],
+        "summer":  ["Protected — check MPAs"],
+        "fall":    ["Protected — check MPAs"],
+        "winter":  ["Protected — check MPAs"]
+      },
+      "huntingTips": [
+        "Most of Laguna's reefs are inside the Laguna Beach State Marine Reserve — zero take.",
+        "Legal spearfishing zones require CDFW map verification.",
+        "Best used for training, scouting, and freediving practice."
+      ],
+      "prediction14Day": "22–28ft expected through the week — top clarity in OC."
+    },
+    "salt-creek": {
+      "spearingRating": 4,
+      "summary": "Reef structure below the bluffs. Good calico and sheephead spot with sporadic bigger fish.",
+      "season": {
+        "spring":  ["Calico Bass", "Sheephead"],
+        "summer":  ["Calico Bass", "Sheephead", "Yellowtail", "Halibut"],
+        "fall":    ["Calico Bass", "Yellowtail", "Bonito"],
+        "winter":  ["Sheephead", "Calico Bass"]
+      },
+      "huntingTips": [
+        "Stair-down entry is the easy part — long swim to the reef.",
+        "Outside reef sections in 25–35ft hold the larger fish.",
+        "Yellowtail pass through the outside kelp in summer afternoons."
+      ],
+      "prediction14Day": "20–24ft expected."
+    },
+    "dana-point": {
+      "spearingRating": 4,
+      "summary": "Headland with real reef structure outside the harbor. Big calico potential.",
+      "season": {
+        "spring":  ["Calico Bass", "Sheephead", "Halibut"],
+        "summer":  ["Calico Bass", "Yellowtail", "White Seabass", "Sheephead"],
+        "fall":    ["Calico Bass", "Yellowtail", "Bonito"],
+        "winter":  ["Sheephead", "Lingcod", "Calico Bass"]
+      },
+      "huntingTips": [
+        "Boat dive for the outside reefs — shore entry is limited.",
+        "Yellowtail move through the kelp line in summer at 25–40ft.",
+        "Calicos here grow big — be patient at reef holes."
+      ],
+      "prediction14Day": "18–22ft trending up with small clean swell."
+    },
+    "san-clemente": {
+      "spearingRating": 3,
+      "summary": "Beach break with reef pockets. T-Street and Trestles zones offer structure. San Mateo MPA nearby.",
+      "season": {
+        "spring":  ["Calico Bass", "Sheephead", "Halibut"],
+        "summer":  ["Calico Bass", "Sheephead", "Halibut", "Corbina"],
+        "fall":    ["Calico Bass", "Sheephead", "Bonito"],
+        "winter":  ["Sheephead", "Calico Bass"]
+      },
+      "huntingTips": [
+        "Know the San Mateo/San Onofre MPA boundaries.",
+        "Reef pockets outside T-Street hold calicos in 15–25ft."
+      ],
+      "prediction14Day": "14–18ft expected."
+    },
+
+    "long-beach": {
+      "spearingRating": 1,
+      "summary": "Breakwater-protected bay water. Very low visibility. Not a spearfishing destination.",
+      "season": {
+        "spring":  ["Halibut", "Spotted Bay Bass"],
+        "summer":  ["Halibut", "Leopard Shark", "Spotted Bay Bass"],
+        "fall":    ["Halibut", "Spotted Bay Bass"],
+        "winter":  ["Spotted Bay Bass"]
+      },
+      "huntingTips": [
+        "Visibility usually 5–10ft — close-range only.",
+        "Check harbor regulations carefully."
+      ],
+      "prediction14Day": "6–10ft expected; bay-driven clarity."
+    },
+    "redondo-beach": {
+      "spearingRating": 4,
+      "summary": "Redondo Canyon drops steep right off the pier — real structure, big fish potential for LA County.",
+      "season": {
+        "spring":  ["Calico Bass", "Sheephead", "Halibut"],
+        "summer":  ["Calico Bass", "Halibut", "White Seabass", "Yellowtail"],
+        "fall":    ["Calico Bass", "Bonito", "Sheephead"],
+        "winter":  ["Sheephead", "Lingcod", "Calico Bass"]
+      },
+      "huntingTips": [
+        "The canyon edge holds big fish — work 30–50ft depth drop-offs.",
+        "White seabass move along the sand channels in summer mornings.",
+        "Watch pier fishermen — keep distance and clear of lines."
+      ],
+      "prediction14Day": "16–20ft expected, improving through the week."
+    },
+    "hermosa-beach": {
+      "spearingRating": 2,
+      "summary": "Sand beach with the Hermosa Pier. Halibut and surfperch spot.",
+      "season": {
+        "spring":  ["Halibut", "Surfperch"],
+        "summer":  ["Halibut", "Corbina"],
+        "fall":    ["Halibut", "Yellowfin Croaker"],
+        "winter":  ["Barred Surfperch"]
+      },
+      "huntingTips": [
+        "Drift parallel to pier pilings for halibut.",
+        "Early morning glass-offs are rare but productive."
+      ],
+      "prediction14Day": "10–14ft expected."
+    },
+    "manhattan-beach": {
+      "spearingRating": 2,
+      "summary": "Sand beach with pier. Halibut spot.",
+      "season": {
+        "spring":  ["Halibut", "Surfperch"],
+        "summer":  ["Halibut", "Corbina"],
+        "fall":    ["Halibut", "Yellowfin Croaker"],
+        "winter":  ["Barred Surfperch"]
+      },
+      "huntingTips": [
+        "Work pier pilings and sandbars for halibut.",
+        "Avoid weekend surfer crowds."
+      ],
+      "prediction14Day": "10–14ft expected."
+    },
+    "venice-beach": {
+      "spearingRating": 1,
+      "summary": "Santa Monica Bay sand. High chlorophyll, low visibility most days.",
+      "season": {
+        "spring":  ["Halibut", "Surfperch"],
+        "summer":  ["Halibut", "Corbina"],
+        "fall":    ["Halibut", "Yellowfin Croaker"],
+        "winter":  ["Barred Surfperch"]
+      },
+      "huntingTips": [
+        "Choose days after extended periods without runoff.",
+        "Sand drifts for halibut are the primary play."
+      ],
+      "prediction14Day": "8–12ft expected."
+    },
+    "santa-monica": {
+      "spearingRating": 1,
+      "summary": "Bay sand, high chlorophyll influence, pier crowds. Limited spearing value.",
+      "season": {
+        "spring":  ["Halibut", "Surfperch"],
+        "summer":  ["Halibut", "Corbina"],
+        "fall":    ["Halibut", "Yellowfin Croaker"],
+        "winter":  ["Barred Surfperch"]
+      },
+      "huntingTips": [
+        "Low viability — pick days carefully.",
+        "Pier fishing zones restricted — keep clear."
+      ],
+      "prediction14Day": "10–14ft expected."
+    },
+    "malibu": {
+      "spearingRating": 5,
+      "summary": "Outside Santa Monica Bay influence. Real reef, real kelp, real fish. LA County's premier spearing coast.",
+      "season": {
+        "spring":  ["Calico Bass", "Sheephead", "White Seabass", "Lingcod"],
+        "summer":  ["Calico Bass", "Yellowtail", "White Seabass", "Sheephead", "Halibut"],
+        "fall":    ["Calico Bass", "Yellowtail", "Bonito", "Sheephead"],
+        "winter":  ["Lingcod", "Sheephead", "Calico Bass"]
+      },
+      "huntingTips": [
+        "Multiple reef zones from County Line to Paradise Cove — pick by swell direction.",
+        "White seabass patrol the outside kelp edges at dawn in spring/summer.",
+        "Yellowtail push in on warm water events — watch sea surface temps.",
+        "Sheephead males hit 20+ pounds on the outside reefs."
+      ],
+      "prediction14Day": "22–26ft expected, clean chlorophyll signal."
+    },
+    "point-dume": {
+      "spearingRating": 5,
+      "summary": "LA County's cleanest water spot. Reef juts out into open ocean — bigger fish, higher visibility.",
+      "season": {
+        "spring":  ["White Seabass", "Calico Bass", "Sheephead", "Lingcod"],
+        "summer":  ["Yellowtail", "White Seabass", "Calico Bass", "Halibut", "Sheephead"],
+        "fall":    ["Yellowtail", "Bonito", "Calico Bass"],
+        "winter":  ["Lingcod", "Sheephead", "Calico Bass"]
+      },
+      "huntingTips": [
+        "Boat access preferred — shore entries are long and rough.",
+        "Outside the point in 40–70ft for big white seabass and yellowtail.",
+        "Watch surge and current — conditions change fast on the tip."
+      ],
+      "prediction14Day": "25–30ft expected — top LA County clarity."
+    },
+    "zuma-beach": {
+      "spearingRating": 3,
+      "summary": "Long sand beach with reef pockets on the ends. Halibut and occasional bass.",
+      "season": {
+        "spring":  ["Halibut", "Calico Bass", "Sheephead"],
+        "summer":  ["Halibut", "Calico Bass", "Corbina"],
+        "fall":    ["Halibut", "Calico Bass"],
+        "winter":  ["Surfperch", "Sheephead"]
+      },
+      "huntingTips": [
+        "Work the ends of Zuma where reef meets sand.",
+        "Middle of the beach is pure sand — halibut drifts only."
+      ],
+      "prediction14Day": "16–20ft expected."
+    },
+    "el-matador": {
+      "spearingRating": 4,
+      "summary": "Sea stacks and reef zones under dramatic cliffs. Solid calico and sheephead structure.",
+      "season": {
+        "spring":  ["Calico Bass", "Sheephead", "Halibut"],
+        "summer":  ["Calico Bass", "Sheephead", "Yellowtail", "Halibut"],
+        "fall":    ["Calico Bass", "Sheephead", "Bonito"],
+        "winter":  ["Sheephead", "Lingcod", "Calico Bass"]
+      },
+      "huntingTips": [
+        "Entry stairs get slippery — watch the rocks at low tide.",
+        "Work around the sea stacks in 15–25ft.",
+        "Surge picks up fast — pick low-swell days."
+      ],
+      "prediction14Day": "18–22ft expected."
+    },
+
+    "casino-point": {
+      "spearingRating": 2,
+      "summary": "Casino Point Dive Park is a NO-TAKE reserve. Legendary visibility — use for training, free diving, scouting. Outside the park is legal.",
+      "season": {
+        "spring":  ["No take — dive park"],
+        "summer":  ["No take — dive park"],
+        "fall":    ["No take — dive park"],
+        "winter":  ["No take — dive park"]
+      },
+      "huntingTips": [
+        "Inside the park: zero take. Outside the orange markers: legal.",
+        "Train your freedives here — the clarity is unmatched on the mainland side.",
+        "Move to Descanso or Pebbly for legal spearing with similar structure."
+      ],
+      "prediction14Day": "45–60ft expected — true blue water."
+    },
+    "descanso-beach": {
+      "spearingRating": 4,
+      "summary": "Just outside Casino Point. Legal spearfishing with similar visibility. Kelp and reef structure.",
+      "season": {
+        "spring":  ["Calico Bass", "Sheephead", "Lingcod"],
+        "summer":  ["Calico Bass", "Yellowtail", "White Seabass", "Sheephead"],
+        "fall":    ["Calico Bass", "Yellowtail", "Bonito"],
+        "winter":  ["Sheephead", "Lingcod", "Calico Bass"]
+      },
+      "huntingTips": [
+        "Verify you're outside the Casino Point park boundary before every shot.",
+        "Kelp edges hold calicos and sheephead in 20–30ft.",
+        "Yellowtail cruise through in summer afternoons."
+      ],
+      "prediction14Day": "35–45ft expected."
+    },
+    "avalon-bay": {
+      "spearingRating": 2,
+      "summary": "Protected bay with heavy boat traffic. Most of Avalon Bay is restricted — know the rules.",
+      "season": {
+        "spring":  ["Calico Bass", "Sheephead"],
+        "summer":  ["Calico Bass", "Sheephead"],
+        "fall":    ["Calico Bass", "Sheephead", "Bonito"],
+        "winter":  ["Sheephead", "Calico Bass"]
+      },
+      "huntingTips": [
+        "Heavy boat traffic — stay visible with a dive flag.",
+        "Most shore zones near the casino are restricted for spearing."
+      ],
+      "prediction14Day": "25–32ft expected."
+    },
+    "lovers-cove": {
+      "spearingRating": 1,
+      "summary": "Lover's Cove is a NO-TAKE State Marine Conservation Area. Glass bottom boat / snorkel only zone.",
+      "season": {
+        "spring":  ["No take — protected"],
+        "summer":  ["No take — protected"],
+        "fall":    ["No take — protected"],
+        "winter":  ["No take — protected"]
+      },
+      "huntingTips": [
+        "This is a protected SMCA — zero take.",
+        "Use for snorkel scouting only. Legal spearing zones require moving well outside the cove."
+      ],
+      "prediction14Day": "30–40ft expected."
+    },
+    "pebbly-beach": {
+      "spearingRating": 4,
+      "summary": "Less crowded option south of Avalon. Solid reef and kelp, fewer boats than Descanso.",
+      "season": {
+        "spring":  ["Calico Bass", "Sheephead", "Lingcod"],
+        "summer":  ["Calico Bass", "Yellowtail", "Sheephead", "White Seabass"],
+        "fall":    ["Calico Bass", "Yellowtail", "Sheephead"],
+        "winter":  ["Sheephead", "Lingcod", "Calico Bass"]
+      },
+      "huntingTips": [
+        "Shore access is rough — most people boat in.",
+        "Outside kelp stringers for yellowtail in summer.",
+        "Calicos hold tight to reef holes in 25–35ft."
+      ],
+      "prediction14Day": "30–40ft expected."
+    },
+    "two-harbors": {
+      "spearingRating": 5,
+      "summary": "Less pressured than Avalon. Real fish density. Outer coves produce yellowtail and white seabass all summer.",
+      "season": {
+        "spring":  ["White Seabass", "Calico Bass", "Sheephead", "Lingcod"],
+        "summer":  ["Yellowtail", "White Seabass", "Calico Bass", "Sheephead"],
+        "fall":    ["Yellowtail", "Bonito", "Calico Bass"],
+        "winter":  ["Lingcod", "Sheephead", "Calico Bass"]
+      },
+      "huntingTips": [
+        "Boat access — Blue Cavern Point and Ship Rock are the classic spots.",
+        "Yellowtail patrol the outside kelp from May through October.",
+        "White seabass on dawn patrols along the sand channels.",
+        "Drift dive the outside edges — the fish come to you."
+      ],
+      "prediction14Day": "45–55ft expected through the week — peak Catalina clarity."
+    }
+  }
+}

@@ -1,0 +1,68 @@
+{
+  "regions": {
+    "san-diego": [
+      {"date": "2026-04-17", "visibility": 28, "rating": "EXCELLENT"},
+      {"date": "2026-04-16", "visibility": 22, "rating": "GOOD"},
+      {"date": "2026-04-15", "visibility": 18, "rating": "GOOD"},
+      {"date": "2026-04-14", "visibility": 10, "rating": "POOR"},
+      {"date": "2026-04-13", "visibility": 8,  "rating": "POOR"},
+      {"date": "2026-04-12", "visibility": 15, "rating": "FAIR"},
+      {"date": "2026-04-11", "visibility": 20, "rating": "GOOD"},
+      {"date": "2026-04-10", "visibility": 25, "rating": "EXCELLENT"},
+      {"date": "2026-04-09", "visibility": 30, "rating": "EXCELLENT"},
+      {"date": "2026-04-08", "visibility": 28, "rating": "EXCELLENT"},
+      {"date": "2026-04-07", "visibility": 22, "rating": "GOOD"},
+      {"date": "2026-04-06", "visibility": 12, "rating": "FAIR"},
+      {"date": "2026-04-05", "visibility": 6,  "rating": "POOR"},
+      {"date": "2026-04-04", "visibility": 18, "rating": "GOOD"}
+    ],
+    "orange-county": [
+      {"date": "2026-04-17", "visibility": 18, "rating": "GOOD"},
+      {"date": "2026-04-16", "visibility": 16, "rating": "FAIR"},
+      {"date": "2026-04-15", "visibility": 14, "rating": "FAIR"},
+      {"date": "2026-04-14", "visibility": 9,  "rating": "POOR"},
+      {"date": "2026-04-13", "visibility": 7,  "rating": "POOR"},
+      {"date": "2026-04-12", "visibility": 12, "rating": "FAIR"},
+      {"date": "2026-04-11", "visibility": 17, "rating": "FAIR"},
+      {"date": "2026-04-10", "visibility": 22, "rating": "GOOD"},
+      {"date": "2026-04-09", "visibility": 24, "rating": "EXCELLENT"},
+      {"date": "2026-04-08", "visibility": 20, "rating": "GOOD"},
+      {"date": "2026-04-07", "visibility": 18, "rating": "GOOD"},
+      {"date": "2026-04-06", "visibility": 11, "rating": "FAIR"},
+      {"date": "2026-04-05", "visibility": 8,  "rating": "POOR"},
+      {"date": "2026-04-04", "visibility": 14, "rating": "FAIR"}
+    ],
+    "la-county": [
+      {"date": "2026-04-17", "visibility": 15, "rating": "FAIR"},
+      {"date": "2026-04-16", "visibility": 12, "rating": "FAIR"},
+      {"date": "2026-04-15", "visibility": 10, "rating": "POOR"},
+      {"date": "2026-04-14", "visibility": 6,  "rating": "POOR"},
+      {"date": "2026-04-13", "visibility": 5,  "rating": "POOR"},
+      {"date": "2026-04-12", "visibility": 9,  "rating": "POOR"},
+      {"date": "2026-04-11", "visibility": 14, "rating": "FAIR"},
+      {"date": "2026-04-10", "visibility": 18, "rating": "GOOD"},
+      {"date": "2026-04-09", "visibility": 20, "rating": "GOOD"},
+      {"date": "2026-04-08", "visibility": 17, "rating": "FAIR"},
+      {"date": "2026-04-07", "visibility": 14, "rating": "FAIR"},
+      {"date": "2026-04-06", "visibility": 9,  "rating": "POOR"},
+      {"date": "2026-04-05", "visibility": 5,  "rating": "POOR"},
+      {"date": "2026-04-04", "visibility": 11, "rating": "FAIR"}
+    ],
+    "catalina-island": [
+      {"date": "2026-04-17", "visibility": 45, "rating": "EPIC"},
+      {"date": "2026-04-16", "visibility": 40, "rating": "EPIC"},
+      {"date": "2026-04-15", "visibility": 38, "rating": "EXCELLENT"},
+      {"date": "2026-04-14", "visibility": 30, "rating": "EXCELLENT"},
+      {"date": "2026-04-13", "visibility": 25, "rating": "EXCELLENT"},
+      {"date": "2026-04-12", "visibility": 32, "rating": "EXCELLENT"},
+      {"date": "2026-04-11", "visibility": 40, "rating": "EPIC"},
+      {"date": "2026-04-10", "visibility": 48, "rating": "EPIC"},
+      {"date": "2026-04-09", "visibility": 50, "rating": "EPIC"},
+      {"date": "2026-04-08", "visibility": 45, "rating": "EPIC"},
+      {"date": "2026-04-07", "visibility": 38, "rating": "EXCELLENT"},
+      {"date": "2026-04-06", "visibility": 28, "rating": "EXCELLENT"},
+      {"date": "2026-04-05", "visibility": 22, "rating": "GOOD"},
+      {"date": "2026-04-04", "visibility": 35, "rating": "EXCELLENT"}
+    ]
+  }
+}

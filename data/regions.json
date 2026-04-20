@@ -1,0 +1,78 @@
+{
+  "regions": [
+    {
+      "slug": "san-diego",
+      "name": "San Diego",
+      "displayName": "San Diego",
+      "centerCoords": { "lat": 32.85, "lon": -117.27 },
+      "spots": [
+        { "slug": "coronado",       "name": "Coronado",              "coords": { "lat": 32.6859, "lon": -117.1831 }, "maxDepth": 15, "type": "beach" },
+        { "slug": "imperial-beach", "name": "Imperial Beach",        "coords": { "lat": 32.5839, "lon": -117.1320 }, "maxDepth": 20, "type": "beach" },
+        { "slug": "point-loma",     "name": "Point Loma",            "coords": { "lat": 32.6728, "lon": -117.2413 }, "maxDepth": 80, "type": "reef" },
+        { "slug": "sunset-cliffs",  "name": "Sunset Cliffs",         "coords": { "lat": 32.7306, "lon": -117.2574 }, "maxDepth": 25, "type": "reef" },
+        { "slug": "ocean-beach",    "name": "Ocean Beach",           "coords": { "lat": 32.7485, "lon": -117.2524 }, "maxDepth": 20, "type": "beach" },
+        { "slug": "mission-beach",  "name": "Mission Beach",         "coords": { "lat": 32.7683, "lon": -117.2547 }, "maxDepth": 15, "type": "beach" },
+        { "slug": "mission-bay",    "name": "Mission Bay",           "coords": { "lat": 32.7791, "lon": -117.2346 }, "maxDepth": 12, "type": "bay" },
+        { "slug": "pacific-beach",  "name": "Pacific Beach",         "coords": { "lat": 32.7983, "lon": -117.2594 }, "maxDepth": 15, "type": "beach" },
+        { "slug": "bird-rock",      "name": "Bird Rock",             "coords": { "lat": 32.8125, "lon": -117.2722 }, "maxDepth": 25, "type": "reef" },
+        { "slug": "windansea",      "name": "Windansea",             "coords": { "lat": 32.8319, "lon": -117.2794 }, "maxDepth": 20, "type": "reef" },
+        { "slug": "la-jolla-cove",  "name": "La Jolla Cove",         "coords": { "lat": 32.8506, "lon": -117.2727 }, "maxDepth": 30, "type": "cove" },
+        { "slug": "underwater-park","name": "La Jolla Underwater Park","coords": { "lat": 32.8525, "lon": -117.2758 }, "maxDepth": 65, "type": "reef" },
+        { "slug": "torrey-pines",   "name": "Torrey Pines",          "coords": { "lat": 32.9227, "lon": -117.2614 }, "maxDepth": 25, "type": "beach" },
+        { "slug": "del-mar",        "name": "Del Mar",               "coords": { "lat": 32.9595, "lon": -117.2653 }, "maxDepth": 15, "type": "beach" },
+        { "slug": "solana-beach",   "name": "Solana Beach",          "coords": { "lat": 32.9912, "lon": -117.2714 }, "maxDepth": 20, "type": "beach" },
+        { "slug": "encinitas",      "name": "Encinitas",             "coords": { "lat": 33.0370, "lon": -117.2920 }, "maxDepth": 25, "type": "reef" },
+        { "slug": "carlsbad",       "name": "Carlsbad",              "coords": { "lat": 33.1581, "lon": -117.3506 }, "maxDepth": 20, "type": "beach" }
+      ]
+    },
+    {
+      "slug": "orange-county",
+      "name": "Orange County",
+      "displayName": "Orange County",
+      "centerCoords": { "lat": 33.55, "lon": -117.85 },
+      "spots": [
+        { "slug": "seal-beach",       "name": "Seal Beach",         "coords": { "lat": 33.7414, "lon": -118.1048 }, "maxDepth": 15, "type": "beach" },
+        { "slug": "huntington-beach", "name": "Huntington Beach",   "coords": { "lat": 33.6595, "lon": -118.0018 }, "maxDepth": 20, "type": "beach" },
+        { "slug": "newport-beach",    "name": "Newport Beach",      "coords": { "lat": 33.6189, "lon": -117.9298 }, "maxDepth": 25, "type": "beach" },
+        { "slug": "corona-del-mar",   "name": "Corona del Mar",     "coords": { "lat": 33.5936, "lon": -117.8770 }, "maxDepth": 30, "type": "cove" },
+        { "slug": "crystal-cove",     "name": "Crystal Cove",       "coords": { "lat": 33.5706, "lon": -117.8403 }, "maxDepth": 40, "type": "cove" },
+        { "slug": "laguna-beach",     "name": "Laguna Beach",       "coords": { "lat": 33.5427, "lon": -117.7854 }, "maxDepth": 50, "type": "reef" },
+        { "slug": "salt-creek",       "name": "Salt Creek",         "coords": { "lat": 33.4745, "lon": -117.7225 }, "maxDepth": 35, "type": "reef" },
+        { "slug": "dana-point",       "name": "Dana Point",         "coords": { "lat": 33.4672, "lon": -117.6981 }, "maxDepth": 45, "type": "reef" },
+        { "slug": "san-clemente",     "name": "San Clemente",       "coords": { "lat": 33.4269, "lon": -117.6119 }, "maxDepth": 30, "type": "beach" }
+      ]
+    },
+    {
+      "slug": "la-county",
+      "name": "LA County",
+      "displayName": "Los Angeles County",
+      "centerCoords": { "lat": 34.0, "lon": -118.5 },
+      "spots": [
+        { "slug": "long-beach",      "name": "Long Beach",       "coords": { "lat": 33.7701, "lon": -118.1937 }, "maxDepth": 20, "type": "beach" },
+        { "slug": "redondo-beach",   "name": "Redondo Beach",    "coords": { "lat": 33.8492, "lon": -118.3884 }, "maxDepth": 35, "type": "reef" },
+        { "slug": "hermosa-beach",   "name": "Hermosa Beach",    "coords": { "lat": 33.8622, "lon": -118.4003 }, "maxDepth": 25, "type": "beach" },
+        { "slug": "manhattan-beach", "name": "Manhattan Beach",  "coords": { "lat": 33.8847, "lon": -118.4109 }, "maxDepth": 30, "type": "beach" },
+        { "slug": "venice-beach",    "name": "Venice Beach",     "coords": { "lat": 33.9850, "lon": -118.4695 }, "maxDepth": 20, "type": "beach" },
+        { "slug": "santa-monica",    "name": "Santa Monica",     "coords": { "lat": 34.0195, "lon": -118.4912 }, "maxDepth": 25, "type": "beach" },
+        { "slug": "malibu",          "name": "Malibu",           "coords": { "lat": 34.0259, "lon": -118.7798 }, "maxDepth": 45, "type": "reef" },
+        { "slug": "point-dume",      "name": "Point Dume",       "coords": { "lat": 34.0003, "lon": -118.8065 }, "maxDepth": 60, "type": "reef" },
+        { "slug": "zuma-beach",      "name": "Zuma Beach",       "coords": { "lat": 34.0164, "lon": -118.8191 }, "maxDepth": 30, "type": "beach" },
+        { "slug": "el-matador",      "name": "El Matador",       "coords": { "lat": 34.0346, "lon": -118.8759 }, "maxDepth": 35, "type": "reef" }
+      ]
+    },
+    {
+      "slug": "catalina-island",
+      "name": "Catalina Island",
+      "displayName": "Catalina Island",
+      "centerCoords": { "lat": 33.39, "lon": -118.42 },
+      "spots": [
+        { "slug": "casino-point",   "name": "Casino Point Dive Park", "coords": { "lat": 33.3498, "lon": -118.3264 }, "maxDepth": 80, "type": "reef" },
+        { "slug": "descanso-beach", "name": "Descanso Beach",         "coords": { "lat": 33.3506, "lon": -118.3272 }, "maxDepth": 40, "type": "cove" },
+        { "slug": "avalon-bay",     "name": "Avalon Bay",             "coords": { "lat": 33.3425, "lon": -118.3269 }, "maxDepth": 30, "type": "bay" },
+        { "slug": "lovers-cove",    "name": "Lover's Cove",           "coords": { "lat": 33.3417, "lon": -118.3189 }, "maxDepth": 35, "type": "cove" },
+        { "slug": "pebbly-beach",   "name": "Pebbly Beach",           "coords": { "lat": 33.3364, "lon": -118.3217 }, "maxDepth": 45, "type": "reef" },
+        { "slug": "two-harbors",    "name": "Two Harbors",            "coords": { "lat": 33.4433, "lon": -118.4966 }, "maxDepth": 60, "type": "reef" }
+      ]
+    }
+  ]
+}

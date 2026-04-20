@@ -1,0 +1,29 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "Static Preview",
+      "runtimeExecutable": "C:\\Program Files\\nodejs\\node.exe",
+      "runtimeArgs": ["scripts/static-server.js"],
+      "port": 8000
+    },
+    {
+      "name": "Express Server",
+      "runtimeExecutable": "C:\\Program Files\\nodejs\\node.exe",
+      "runtimeArgs": ["api/server.js"],
+      "port": 3000
+    },
+    {
+      "name": "levelup",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev", "--prefix", "levelup-habit-tracker"],
+      "port": 5173
+    },
+    {
+      "name": "Command Deck",
+      "runtimeExecutable": "C:\\Program Files\\nodejs\\node.exe",
+      "runtimeArgs": ["dashboard/server.js"],
+      "port": 4321
+    }
+  ]
+}

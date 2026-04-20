@@ -1,0 +1,175 @@
+{
+  "lastUpdated": "2026-04-17T08:15:00-07:00",
+  "regions": {
+    "san-diego": {
+      "visibility": {
+        "feet": 28,
+        "rating": "EXCELLENT",
+        "note": "Crystal clear conditions with excellent horizontal visibility. Kelp forest visible from surface.",
+        "clarityRating": 5,
+        "spearingRating": 4
+      },
+      "sources": {
+        "satellite": {
+          "chlorophyll": 0.38,
+          "unit": "mg/m³",
+          "note": "Very low chlorophyll — clean oceanic water pushing inshore. Minimal phytoplankton bloom.",
+          "timestamp": "2026-04-17T06:00:00-07:00"
+        },
+        "piercam": {
+          "estimatedVisibility": 30,
+          "pillingsVisible": ["right-front-4ft", "right-back-11ft", "back-left-14ft", "far-left-30ft"],
+          "note": "All four pilings visible including far-left at 30ft.",
+          "timestamp": "2026-04-17T09:05:00-07:00"
+        },
+        "justgetwet": {
+          "estimatedVisibility": 25,
+          "report": "Visibility 20–30ft at La Jolla. Surge minimal. Excellent conditions for diving and spearfishing.",
+          "timestamp": "2026-04-17T07:30:00-07:00",
+          "sourceUrl": "https://justgetwet.com"
+        },
+        "surf": {
+          "waveHeightFt": 2.5,
+          "periodSec": 13,
+          "direction": "WNW",
+          "windKts": 6,
+          "windDir": "W",
+          "note": "Light offshore morning winds, small long-period WNW swell. Clean conditions.",
+          "timestamp": "2026-04-17T07:00:00-07:00"
+        }
+      },
+      "aiSummary": "Today is shaping up to be one of the best visibility days of the month for San Diego spearfishermen. Satellite chlorophyll readings are extremely low at 0.38 mg/m³, indicating clean oceanic water pushing inshore — a strong signal for excellent clarity. The Scripps Pier cam confirms this with all four pilings visible, including the far-left marker at 30ft. JustGetWet divers are reporting 20–30ft at La Jolla with minimal surge. Best spots today: La Jolla Underwater Park for the kelp forest and Point Loma for larger pelagics. Conditions should hold through afternoon as winds are forecast under 10 knots. Get in early for the best light.",
+      "spots": {
+        "coronado":         { "visibility": 12, "chlorophyll": 1.20, "waveHeightFt": 3.0, "windKts": 8,  "trend": "steady" },
+        "imperial-beach":   { "visibility": 10, "chlorophyll": 1.45, "waveHeightFt": 3.2, "windKts": 9,  "trend": "down" },
+        "point-loma":       { "visibility": 25, "chlorophyll": 0.42, "waveHeightFt": 2.5, "windKts": 6,  "trend": "up" },
+        "sunset-cliffs":    { "visibility": 22, "chlorophyll": 0.55, "waveHeightFt": 2.8, "windKts": 6,  "trend": "steady" },
+        "ocean-beach":      { "visibility": 15, "chlorophyll": 0.90, "waveHeightFt": 3.0, "windKts": 7,  "trend": "steady" },
+        "mission-beach":    { "visibility": 14, "chlorophyll": 0.95, "waveHeightFt": 2.8, "windKts": 7,  "trend": "steady" },
+        "mission-bay":      { "visibility": 8,  "chlorophyll": 2.10, "waveHeightFt": 0.5, "windKts": 5,  "trend": "steady" },
+        "pacific-beach":    { "visibility": 16, "chlorophyll": 0.82, "waveHeightFt": 2.7, "windKts": 6,  "trend": "up" },
+        "bird-rock":        { "visibility": 18, "chlorophyll": 0.68, "waveHeightFt": 2.5, "windKts": 6,  "trend": "down" },
+        "windansea":        { "visibility": 20, "chlorophyll": 0.60, "waveHeightFt": 2.8, "windKts": 6,  "trend": "up" },
+        "la-jolla-cove":    { "visibility": 28, "chlorophyll": 0.38, "waveHeightFt": 2.2, "windKts": 5,  "trend": "up" },
+        "underwater-park":  { "visibility": 30, "chlorophyll": 0.35, "waveHeightFt": 2.0, "windKts": 5,  "trend": "up" },
+        "torrey-pines":     { "visibility": 20, "chlorophyll": 0.65, "waveHeightFt": 2.5, "windKts": 6,  "trend": "steady" },
+        "del-mar":          { "visibility": 15, "chlorophyll": 0.88, "waveHeightFt": 2.8, "windKts": 7,  "trend": "steady" },
+        "solana-beach":     { "visibility": 17, "chlorophyll": 0.80, "waveHeightFt": 2.8, "windKts": 7,  "trend": "up" },
+        "encinitas":        { "visibility": 19, "chlorophyll": 0.70, "waveHeightFt": 2.9, "windKts": 7,  "trend": "up" },
+        "carlsbad":         { "visibility": 14, "chlorophyll": 1.05, "waveHeightFt": 3.0, "windKts": 8,  "trend": "steady" }
+      }
+    },
+    "orange-county": {
+      "visibility": {
+        "feet": 18,
+        "rating": "GOOD",
+        "note": "Solid mid-range visibility. Laguna reef zones holding clean water.",
+        "clarityRating": 4,
+        "spearingRating": 3
+      },
+      "sources": {
+        "satellite": {
+          "chlorophyll": 0.85,
+          "unit": "mg/m³",
+          "note": "Moderate chlorophyll with small coastal bloom pockets north of Newport.",
+          "timestamp": "2026-04-17T06:00:00-07:00"
+        },
+        "surf": {
+          "waveHeightFt": 3.2,
+          "periodSec": 12,
+          "direction": "WNW",
+          "windKts": 8,
+          "windDir": "W",
+          "note": "Moderate WNW swell with light morning wind. Cleanest south of Dana Point.",
+          "timestamp": "2026-04-17T07:00:00-07:00"
+        }
+      },
+      "aiSummary": "Orange County is delivering solid mid-range visibility today, with the Laguna reef zones holding the cleanest water. Satellite chlorophyll sits at 0.85 mg/m³ — a touch higher than San Diego but still well within diveable range. Expect 15–25ft at Crystal Cove and Laguna, dropping to 10–15ft at the more exposed beach breaks north of Newport. Salt Creek and Dana Point are your best bets for bigger fish today. Morning winds are light and the WNW swell is manageable at 3ft. Plan to be in the water before 10am for the glassiest conditions.",
+      "spots": {
+        "seal-beach":       { "visibility": 10, "chlorophyll": 1.30, "waveHeightFt": 3.2, "windKts": 9,  "trend": "steady" },
+        "huntington-beach": { "visibility": 12, "chlorophyll": 1.10, "waveHeightFt": 3.4, "windKts": 9,  "trend": "steady" },
+        "newport-beach":    { "visibility": 15, "chlorophyll": 0.95, "waveHeightFt": 3.2, "windKts": 8,  "trend": "up" },
+        "corona-del-mar":   { "visibility": 20, "chlorophyll": 0.70, "waveHeightFt": 2.8, "windKts": 7,  "trend": "up" },
+        "crystal-cove":     { "visibility": 22, "chlorophyll": 0.65, "waveHeightFt": 2.8, "windKts": 7,  "trend": "up" },
+        "laguna-beach":     { "visibility": 25, "chlorophyll": 0.55, "waveHeightFt": 2.6, "windKts": 6,  "trend": "up" },
+        "salt-creek":       { "visibility": 22, "chlorophyll": 0.60, "waveHeightFt": 2.8, "windKts": 7,  "trend": "steady" },
+        "dana-point":       { "visibility": 20, "chlorophyll": 0.68, "waveHeightFt": 2.9, "windKts": 7,  "trend": "steady" },
+        "san-clemente":     { "visibility": 16, "chlorophyll": 0.85, "waveHeightFt": 3.0, "windKts": 8,  "trend": "steady" }
+      }
+    },
+    "la-county": {
+      "visibility": {
+        "feet": 15,
+        "rating": "FAIR",
+        "note": "Typical LA conditions — cleaner north at Malibu and Point Dume.",
+        "clarityRating": 3,
+        "spearingRating": 3
+      },
+      "sources": {
+        "satellite": {
+          "chlorophyll": 1.25,
+          "unit": "mg/m³",
+          "note": "Elevated chlorophyll through Santa Monica Bay. Clean water returning near Point Dume.",
+          "timestamp": "2026-04-17T06:00:00-07:00"
+        },
+        "surf": {
+          "waveHeightFt": 3.5,
+          "periodSec": 11,
+          "direction": "W",
+          "windKts": 10,
+          "windDir": "W",
+          "note": "Fresh onshore flow building midday. Earliest windows are best.",
+          "timestamp": "2026-04-17T07:00:00-07:00"
+        }
+      },
+      "aiSummary": "LA County sits in typical spring mode today: the inner Santa Monica Bay is running higher chlorophyll around 1.25 mg/m³, keeping visibility in the 10–15ft range at Manhattan, Hermosa, and Venice. Head north — Malibu and Point Dume are where the cleaner water lives, with 20–25ft showing on the outside reefs. Redondo Beach canyon can hold surprise clarity if the morning tide is right. Onshore wind is forecast to build after 11am, so early sessions will pay off. Best spearing target today: Malibu reef zones for calico bass and sheephead.",
+      "spots": {
+        "long-beach":       { "visibility": 8,  "chlorophyll": 1.80, "waveHeightFt": 1.5, "windKts": 8,  "trend": "down" },
+        "redondo-beach":    { "visibility": 18, "chlorophyll": 1.00, "waveHeightFt": 3.0, "windKts": 9,  "trend": "up" },
+        "hermosa-beach":    { "visibility": 12, "chlorophyll": 1.30, "waveHeightFt": 3.2, "windKts": 9,  "trend": "steady" },
+        "manhattan-beach":  { "visibility": 13, "chlorophyll": 1.20, "waveHeightFt": 3.2, "windKts": 9,  "trend": "steady" },
+        "venice-beach":     { "visibility": 10, "chlorophyll": 1.50, "waveHeightFt": 3.3, "windKts": 10, "trend": "down" },
+        "santa-monica":     { "visibility": 11, "chlorophyll": 1.40, "waveHeightFt": 3.2, "windKts": 10, "trend": "steady" },
+        "malibu":           { "visibility": 22, "chlorophyll": 0.70, "waveHeightFt": 3.0, "windKts": 8,  "trend": "up" },
+        "point-dume":       { "visibility": 25, "chlorophyll": 0.60, "waveHeightFt": 3.0, "windKts": 8,  "trend": "up" },
+        "zuma-beach":       { "visibility": 18, "chlorophyll": 0.85, "waveHeightFt": 3.2, "windKts": 9,  "trend": "steady" },
+        "el-matador":       { "visibility": 20, "chlorophyll": 0.78, "waveHeightFt": 3.1, "windKts": 8,  "trend": "up" }
+      }
+    },
+    "catalina-island": {
+      "visibility": {
+        "feet": 45,
+        "rating": "EPIC",
+        "note": "Blue water days. Casino Point consistently pushing 50ft+.",
+        "clarityRating": 5,
+        "spearingRating": 5
+      },
+      "sources": {
+        "satellite": {
+          "chlorophyll": 0.18,
+          "unit": "mg/m³",
+          "note": "Pristine offshore water. No coastal bloom influence.",
+          "timestamp": "2026-04-17T06:00:00-07:00"
+        },
+        "surf": {
+          "waveHeightFt": 1.5,
+          "periodSec": 12,
+          "direction": "WNW",
+          "windKts": 5,
+          "windDir": "W",
+          "note": "Leeward side glassy. Boat crossing conditions excellent.",
+          "timestamp": "2026-04-17T07:00:00-07:00"
+        }
+      },
+      "aiSummary": "Catalina is firing today. Satellite readings show 0.18 mg/m³ chlorophyll — true blue water — and the leeward side is glassy with a 1.5ft WNW swell and 5kt wind. Expect 40–60ft visibility at Casino Point Dive Park with the kelp forest lit up from the surface. Two Harbors is holding similar clarity and less crowded. If you're making the boat crossing, conditions are ideal both ways. Target species: yellowtail moving through the outer kelp lines, white seabass along the sand channels, and calico bass pretty much everywhere on the reef. This is a 'drop everything and go' day.",
+      "spots": {
+        "casino-point":   { "visibility": 55, "chlorophyll": 0.15, "waveHeightFt": 1.0, "windKts": 4,  "trend": "up" },
+        "descanso-beach": { "visibility": 40, "chlorophyll": 0.22, "waveHeightFt": 1.2, "windKts": 5,  "trend": "up" },
+        "avalon-bay":     { "visibility": 30, "chlorophyll": 0.30, "waveHeightFt": 0.8, "windKts": 4,  "trend": "steady" },
+        "lovers-cove":    { "visibility": 35, "chlorophyll": 0.25, "waveHeightFt": 1.0, "windKts": 4,  "trend": "up" },
+        "pebbly-beach":   { "visibility": 38, "chlorophyll": 0.24, "waveHeightFt": 1.2, "windKts": 5,  "trend": "up" },
+        "two-harbors":    { "visibility": 50, "chlorophyll": 0.18, "waveHeightFt": 1.5, "windKts": 5,  "trend": "up" }
+      }
+    }
+  }
+}
