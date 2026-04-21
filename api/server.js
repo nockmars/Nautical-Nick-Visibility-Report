@@ -155,9 +155,17 @@ app.post('/api/stripe-webhook', (req, res) => {
       console.log(`[stripe] Sub cancelled: ${sub.id}`);
       break;
     }
+    case 'invoice.payment_succeeded': {
+      const inv = event.data.object;
+      console.log(`[stripe] Payment succeeded: invoice ${inv.id} customer ${inv.customer} amount ${inv.amount_paid / 100} ${inv.currency.toUpperCase()}`);
+      // In production: mark subscription paid-through for inv.period_end,
+      // log revenue for analytics
+      break;
+    }
     case 'invoice.payment_failed': {
       const inv = event.data.object;
       console.log(`[stripe] Payment failed on invoice ${inv.id} for customer ${inv.customer}`);
+      // In production: trigger dunning email, revoke access after grace period
       break;
     }
     default:
