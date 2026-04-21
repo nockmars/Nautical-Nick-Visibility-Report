@@ -1718,3 +1718,203 @@ body.signed-in .signin-link { display: none; }
 /* Hide the "not signed in? we'll send you a link" hint once signed in */
 body.signed-in .signed-out-hint { display: none; }
 
+/* ─────────────────────────────────────────────────────────────────────────
+   Auth tabs (login modal)
+   ───────────────────────────────────────────────────────────────────────── */
+.auth-tabs {
+  display: flex;
+  gap: 0;
+  margin: 0 0 20px;
+  border-bottom: 1px solid rgba(74, 216, 245, 0.2);
+}
+.auth-tab {
+  flex: 1;
+  background: none;
+  border: none;
+  padding: 12px 16px;
+  font-family: var(--display);
+  font-size: 0.9rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  transition: color 0.15s, border-color 0.15s;
+}
+.auth-tab:hover { color: var(--text); }
+.auth-tab.active {
+  color: var(--cyan-bright);
+  border-bottom-color: var(--cyan-bright);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Spot modal — free hero (photo + map + vis descriptor)
+   ───────────────────────────────────────────────────────────────────────── */
+.spot-hero-media {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin: 16px 0;
+}
+@media (max-width: 640px) {
+  .spot-hero-media { grid-template-columns: 1fr; }
+}
+
+.spot-hero-photo,
+.spot-hero-map {
+  position: relative;
+  aspect-ratio: 16 / 10;
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: var(--panel-hover);
+  border: 1px solid var(--cyan-border);
+}
+
+.spot-hero-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.spot-hero-photo-fallback {
+  position: absolute;
+  inset: 0;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: var(--text-dim);
+  font-size: 0.85rem;
+}
+.spot-hero-photo.no-photo img { display: none; }
+.spot-hero-photo.no-photo .spot-hero-photo-fallback { display: flex; }
+.spot-hero-photo-emoji { font-size: 2rem; }
+
+.spot-hero-map iframe {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  display: block;
+  filter: brightness(0.85) saturate(1.1);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Spot modal — visibility hero (free): big number + descriptor
+   ───────────────────────────────────────────────────────────────────────── */
+.spot-vis-hero {
+  background: linear-gradient(135deg,
+    rgba(74, 216, 245, 0.08),
+    rgba(74, 216, 245, 0.02));
+  border: 1px solid var(--cyan-border);
+  border-radius: var(--radius);
+  padding: 18px 20px;
+  margin: 12px 0 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.spot-vis-hero-main {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+.spot-vis-hero-label {
+  font-family: var(--display);
+  font-size: 0.75rem;
+  letter-spacing: 0.12em;
+  color: var(--text-dim);
+  text-transform: uppercase;
+}
+.spot-vis-hero-value {
+  font-family: var(--display);
+  font-size: 2.6rem;
+  line-height: 1;
+  color: var(--cyan-bright);
+  letter-spacing: 0.02em;
+  text-shadow: 0 0 18px var(--cyan-glow);
+}
+.spot-vis-hero-value .spot-tile-unit {
+  font-size: 1rem;
+  color: var(--text-dim);
+  margin-left: 4px;
+  letter-spacing: 0.08em;
+}
+.spot-vis-hero-descriptor {
+  font-size: 0.95rem;
+  color: var(--text);
+  opacity: 0.9;
+  line-height: 1.4;
+}
+.spot-vis-hero-descriptor .descriptor-prefix {
+  color: var(--text-dim);
+  font-size: 0.8rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin-right: 6px;
+}
+
+/* Tier colors still apply via .vis-good / .vis-moderate / .vis-poor */
+.spot-vis-hero-value.vis-good     { color: var(--green);  text-shadow: 0 0 18px rgba(0, 230, 118, 0.35); }
+.spot-vis-hero-value.vis-moderate { color: var(--yellow); text-shadow: 0 0 18px rgba(255, 214, 0, 0.35); }
+.spot-vis-hero-value.vis-poor     { color: var(--red);    text-shadow: 0 0 18px rgba(255, 23, 68, 0.35); }
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Spot modal — gated data tiles (subscribers only)
+   ───────────────────────────────────────────────────────────────────────── */
+.spot-gated-tiles {
+  position: relative;
+  margin: 16px 0;
+  padding: 18px;
+  border: 1px solid rgba(255, 122, 47, 0.25);
+  border-radius: var(--radius);
+  background: rgba(255, 122, 47, 0.04);
+}
+.spot-gated-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.spot-gated-header h3 {
+  margin: 0;
+  font-family: var(--display);
+  font-size: 1rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text);
+}
+
+/* Locked: blur the tile grid + factors, overlay a mini unlock CTA */
+.spot-gated-tiles.locked .spot-modal-tiles,
+.spot-gated-tiles.locked #spotModalFactors {
+  filter: blur(6px);
+  pointer-events: none;
+  user-select: none;
+}
+.spot-gated-tiles.locked::after {
+  content: 'Subscribe to Ocean Oracle Pro to unlock the raw numbers →';
+  position: absolute;
+  inset: auto 0 0 0;
+  top: 50%;
+  transform: translateY(-50%);
+  text-align: center;
+  font-family: var(--display);
+  font-size: 0.9rem;
+  letter-spacing: 0.06em;
+  color: var(--text);
+  background: rgba(13, 51, 71, 0.85);
+  padding: 10px 16px;
+  border-radius: 999px;
+  pointer-events: none;
+  width: max-content;
+  max-width: 90%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 0 24px var(--cyan-glow);
+}
+/* When unlocked, we want to click through the normal way */
+.spot-gated-tiles:not(.locked)::after { display: none; }
+

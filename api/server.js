@@ -73,12 +73,7 @@ app.get('/api/health', (req, res) => {
 });
 
 // ── Auth routes ────────────────────────────────────────────────────────────
-app.use('/api', auth.buildRouter({
-  resend,
-  fromEmail: FROM_EMAIL,
-  baseUrl:   BASE,
-  isProd:    IS_PROD,
-}));
+app.use('/api', auth.buildRouter({ isProd: IS_PROD }));
 
 // ═══════════════════════════════════════════════════════════════════════════
 // STRIPE — Create Checkout Session

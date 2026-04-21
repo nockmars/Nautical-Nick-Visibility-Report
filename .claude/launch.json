@@ -14,12 +14,6 @@
       "port": 3000
     },
     {
-      "name": "levelup",
-      "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev", "--prefix", "levelup-habit-tracker"],
-      "port": 5173
-    },
-    {
       "name": "Command Deck",
       "runtimeExecutable": "C:\\Program Files\\nodejs\\node.exe",
       "runtimeArgs": ["dashboard/server.js"],

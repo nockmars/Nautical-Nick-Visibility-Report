@@ -1,30 +1,23 @@
 /**
  * api/auth.js
  *
- * Passwordless auth via magic link + HttpOnly cookie session.
+ * Username + password auth with HttpOnly cookie sessions.
  *
- * Flow:
- *   1. User submits email           → POST /api/auth/login
- *      Server mints single-use token, emails link with ?auth=<token>.
- *
- *   2. User clicks link → frontend  → GET /api/auth/verify?token=...
- *      Server consumes token, creates session, sets HttpOnly cookie,
- *      redirects back to BASE_URL. (GET + redirect so it works from email
- *      clients that can't do POST.)
- *
- *   3. Frontend calls                 GET /api/me
- *      Returns { email, pro } for the cookie-identified user, or
- *      { authenticated: false } if no session.
- *
- *   4. Logout                       → POST /api/auth/logout
- *      Clears cookie, deletes session row.
+ * Routes:
+ *   POST /api/auth/register   { username, email, password } → creates account, signs in
+ *   POST /api/auth/login      { identifier, password }      → signs in (identifier = email or username)
+ *   POST /api/auth/logout                                   → clears cookie + deletes session
+ *   GET  /api/me                                            → current session info
  *
  * Security notes:
- *   - Tokens are 32 bytes from crypto.randomBytes (no enumeration risk).
- *   - Tokens are single-use and expire in 15 min.
- *   - Session cookie is HttpOnly (no JS access), Secure in prod,
- *     SameSite=Lax (allows top-level nav from email link).
- *   - Do not leak whether an email exists — always respond "check your inbox."
+ *   - Passwords hashed with scrypt (see db.js).
+ *   - Session cookie is HttpOnly, Secure in prod, SameSite=Lax, 60 days.
+ *   - Login timing is not explicitly constant, but scrypt dominates and
+ *     is constant for a given hash. Failed logins still run scrypt against
+ *     a dummy hash to avoid a timing side channel that would reveal
+ *     whether a username exists.
+ *   - Register returns generic "try a different one" on conflicts to
+ *     avoid confirming which field conflicted (username vs email).
  */
 
 const express = require('express');
@@ -33,83 +26,73 @@ const db      = require('./db');
 
 const COOKIE_NAME = 'naut_session';
 
-function buildRouter({ resend, fromEmail, baseUrl, isProd }) {
+function buildRouter({ isProd }) {
   const router = express.Router();
 
-  // ── POST /api/auth/login ───────────────────────────────────────────────
-  // Body: { email }
-  // Response: { ok: true } regardless of whether the email exists.
-  router.post('/auth/login', async (req, res) => {
-    const email = String(req.body?.email || '').trim().toLowerCase();
-    if (!email || !email.includes('@')) {
-      return res.status(400).json({ error: 'valid email required' });
-    }
+  // ── POST /api/auth/register ────────────────────────────────────────────
+  router.post('/auth/register', async (req, res) => {
+    const { username, email, password } = req.body || {};
 
-    const token = db.createLoginToken(email);
-    const link  = `${baseUrl}/api/auth/verify?token=${token}`;
-
-    if (!resend) {
-      // Dev fallback: if no email provider, log the link so you can
-      // click through locally without SMTP setup.
-      console.log(`[auth] (no Resend configured) magic link for ${email}:\n  ${link}`);
-    } else {
-      try {
-        await resend.emails.send({
-          from:    `Nautical Nick <${fromEmail}>`,
-          to:      email,
-          subject: '🔑 Your Nautical Nick sign-in link',
-          html:    magicLinkEmailHtml(link),
-        });
-      } catch (err) {
-        console.warn('[auth] Resend send failed:', err.message);
-        // Don't leak to the client — still return ok.
+    let user;
+    try {
+      user = db.createUser({ username, email, password });
+    } catch (err) {
+      // Map validation errors to stable 400s
+      const status = 400;
+      switch (err.code) {
+        case 'BAD_USERNAME':
+        case 'BAD_EMAIL':
+        case 'BAD_PASSWORD':
+          return res.status(status).json({ error: err.message });
+        case 'USERNAME_TAKEN':
+        case 'EMAIL_TAKEN':
+          // Intentionally vague — don't confirm which field conflicted.
+          return res.status(status).json({
+            error: 'That username or email is already in use.',
+          });
+        default:
+          console.error('[auth] register error:', err);
+          return res.status(500).json({ error: 'Could not create account' });
       }
     }
 
-    res.json({ ok: true, message: 'Check your inbox for a sign-in link.' });
+    const sid = db.createSession(user.id);
+    setSessionCookie(res, sid, isProd);
+    res.json({ ok: true, username: user.username, email: user.email });
   });
 
-  // ── GET /api/auth/verify?token=... ─────────────────────────────────────
-  // Consume token → create session → set cookie → redirect to /.
-  router.get('/auth/verify', (req, res) => {
-    const token = String(req.query.token || '');
-    const consumed = db.consumeLoginToken(token);
+  // ── POST /api/auth/login ───────────────────────────────────────────────
+  router.post('/auth/login', async (req, res) => {
+    const identifier = String(req.body?.identifier || req.body?.email || req.body?.username || '').trim();
+    const password   = String(req.body?.password || '');
 
-    if (!consumed) {
-      return res.redirect(`${baseUrl}/?auth_error=1`);
+    if (!identifier || !password) {
+      return res.status(400).json({ error: 'Username/email and password required' });
     }
 
-    const user = db.upsertUserByEmail(consumed.email);
-    const sid  = db.createSession(user.id);
+    const user = db.verifyCredentials(identifier, password);
+    if (!user) {
+      // Burn cycles to keep login timing roughly constant regardless of
+      // whether the user existed.
+      try { require('crypto').scryptSync(password, 'nautical-nick-dummy-salt', 64, { N: 1 << 14, r: 8, p: 1 }); }
+      catch {}
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
 
-    res.setHeader('Set-Cookie', cookie.serialize(COOKIE_NAME, sid, {
-      httpOnly: true,
-      secure:   isProd,
-      sameSite: 'lax',
-      path:     '/',
-      maxAge:   Math.floor(db.SESSION_TTL_MS / 1000),
-    }));
-
-    res.redirect(`${baseUrl}/?auth_ok=1`);
+    const sid = db.createSession(user.id);
+    setSessionCookie(res, sid, isProd);
+    res.json({ ok: true, username: user.username, email: user.email });
   });
 
   // ── POST /api/auth/logout ──────────────────────────────────────────────
   router.post('/auth/logout', (req, res) => {
     const sid = readSessionId(req);
     if (sid) db.deleteSession(sid);
-
-    res.setHeader('Set-Cookie', cookie.serialize(COOKIE_NAME, '', {
-      httpOnly: true,
-      secure:   isProd,
-      sameSite: 'lax',
-      path:     '/',
-      maxAge:   0,
-    }));
+    clearSessionCookie(res, isProd);
     res.json({ ok: true });
   });
 
   // ── GET /api/me ────────────────────────────────────────────────────────
-  // Canonical source of truth for "am I logged in / am I pro?"
   router.get('/me', (req, res) => {
     const sid = readSessionId(req);
     const s   = db.getSession(sid);
@@ -117,6 +100,7 @@ function buildRouter({ resend, fromEmail, baseUrl, isProd }) {
 
     res.json({
       authenticated:      true,
+      username:           s.user.username,
       email:              s.user.email,
       pro:                db.isPro(s.user),
       subscriptionStatus: s.user.subscription_status || null,
@@ -127,7 +111,7 @@ function buildRouter({ resend, fromEmail, baseUrl, isProd }) {
   return router;
 }
 
-// ── Middleware exported for other routes ─────────────────────────────────
+// ── Middleware ───────────────────────────────────────────────────────────
 function requireAuth(req, res, next) {
   const sid = readSessionId(req);
   const s = db.getSession(sid);
@@ -155,26 +139,24 @@ function readSessionId(req) {
   return parsed[COOKIE_NAME] || null;
 }
 
-function magicLinkEmailHtml(link) {
-  return `
-    <div style="font-family: -apple-system, Segoe UI, Roboto, sans-serif; color:#0d3347; max-width:520px;">
-      <h2 style="color:#0d3347; margin:0 0 12px;">🌊 Sign in to Nautical Nick</h2>
-      <p>Click the button below to sign in. This link expires in 15 minutes and can only be used once.</p>
-      <p style="margin:24px 0;">
-        <a href="${link}" style="
-          display:inline-block; background:#1e5f8a; color:#fff; text-decoration:none;
-          padding:12px 24px; border-radius:8px; font-weight:600;
-        ">Sign in</a>
-      </p>
-      <p style="font-size:12px; color:#6a9ab0;">
-        Or copy this link: <br/>
-        <span style="word-break:break-all;">${link}</span>
-      </p>
-      <p style="font-size:12px; color:#6a9ab0; margin-top:24px;">
-        Didn't request this? You can safely ignore this email.
-      </p>
-    </div>
-  `;
+function setSessionCookie(res, sid, isProd) {
+  res.setHeader('Set-Cookie', cookie.serialize(COOKIE_NAME, sid, {
+    httpOnly: true,
+    secure:   isProd,
+    sameSite: 'lax',
+    path:     '/',
+    maxAge:   Math.floor(db.SESSION_TTL_MS / 1000),
+  }));
+}
+
+function clearSessionCookie(res, isProd) {
+  res.setHeader('Set-Cookie', cookie.serialize(COOKIE_NAME, '', {
+    httpOnly: true,
+    secure:   isProd,
+    sameSite: 'lax',
+    path:     '/',
+    maxAge:   0,
+  }));
 }
 
 module.exports = { buildRouter, requireAuth, optionalAuth, COOKIE_NAME };

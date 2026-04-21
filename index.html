@@ -387,19 +387,54 @@
   </div>
 
   <!-- ═══════════════════════════════════════════════════════════════
-       LOGIN MODAL
+       LOGIN / REGISTER MODAL
   ═══════════════════════════════════════════════════════════════ -->
   <div class="modal-backdrop" id="loginModal" style="display:none" aria-modal="true" role="dialog">
     <div class="modal-card">
       <button class="modal-close" onclick="closeModal('loginModal')" aria-label="Close">✕</button>
       <div class="modal-icon">🔑</div>
-      <h2 class="modal-title">Sign In</h2>
-      <p class="modal-sub">No password. We email a one-click sign-in link.</p>
-      <div class="modal-form">
-        <input type="email" id="loginEmail" class="form-input" placeholder="your@email.com" autocomplete="email" />
-        <button class="btn-subscribe modal-subscribe-btn" id="loginSendBtn" onclick="sendMagicLink()">Send sign-in link</button>
+
+      <!-- Tab switcher -->
+      <div class="auth-tabs" role="tablist">
+        <button type="button" class="auth-tab active" id="authTabLogin"
+                role="tab" aria-selected="true" onclick="switchAuthTab('login')">
+          Sign in
+        </button>
+        <button type="button" class="auth-tab" id="authTabRegister"
+                role="tab" aria-selected="false" onclick="switchAuthTab('register')">
+          Create account
+        </button>
       </div>
-      <p class="modal-fine" id="loginMsg"></p>
+
+      <!-- Sign in panel -->
+      <div class="auth-panel" id="authPanelLogin" role="tabpanel">
+        <div class="modal-form">
+          <input type="text" id="loginIdentifier" class="form-input"
+                 placeholder="Username or email" autocomplete="username" />
+          <input type="password" id="loginPassword" class="form-input"
+                 placeholder="Password" autocomplete="current-password" />
+          <button class="btn-subscribe modal-subscribe-btn" id="loginBtn"
+                  onclick="doLogin()">Sign in</button>
+        </div>
+        <p class="modal-fine" id="loginMsg"></p>
+      </div>
+
+      <!-- Register panel -->
+      <div class="auth-panel" id="authPanelRegister" role="tabpanel" style="display:none">
+        <div class="modal-form">
+          <input type="text"     id="registerUsername" class="form-input"
+                 placeholder="Username (3-24 chars)" autocomplete="username"
+                 minlength="3" maxlength="24" />
+          <input type="email"    id="registerEmail"    class="form-input"
+                 placeholder="your@email.com" autocomplete="email" />
+          <input type="password" id="registerPassword" class="form-input"
+                 placeholder="Password (8+ chars)" autocomplete="new-password"
+                 minlength="8" />
+          <button class="btn-subscribe modal-subscribe-btn" id="registerBtn"
+                  onclick="doRegister()">Create account</button>
+        </div>
+        <p class="modal-fine" id="registerMsg"></p>
+      </div>
     </div>
   </div>
 
@@ -410,38 +445,72 @@
     <div class="modal-card modal-card-wide">
       <button class="modal-close" onclick="closeModal('spotModal')" aria-label="Close">✕</button>
 
-      <!-- FREE HEADER -->
+      <!-- ── FREE HERO (everyone sees this) ──────────────────────────── -->
       <div class="spot-modal-header">
         <h2 class="spot-modal-name" id="spotModalName">—</h2>
         <p class="spot-modal-meta" id="spotModalMeta">—</p>
       </div>
 
-      <!-- FREE TILES -->
-      <div class="spot-modal-tiles">
-        <div class="spot-tile">
-          <span class="spot-tile-label">VISIBILITY</span>
-          <span class="spot-tile-value" id="spotModalVis">—<span class="spot-tile-unit">FT</span></span>
+      <!-- Side-by-side beach photo + map. Stacks on narrow viewports. -->
+      <div class="spot-hero-media">
+        <div class="spot-hero-photo">
+          <img id="spotModalPhoto" alt="" loading="lazy"
+               onerror="this.parentElement.classList.add('no-photo')" />
+          <div class="spot-hero-photo-fallback">
+            <span class="spot-hero-photo-emoji">🌊</span>
+            <span>Photo coming soon</span>
+          </div>
+        </div>
+        <div class="spot-hero-map">
+          <!-- OpenStreetMap embed — no API key, refreshed per spot by js -->
+          <iframe id="spotModalMap" title="Spot location"
+                  loading="lazy" referrerpolicy="no-referrer"
+                  src="about:blank"></iframe>
+        </div>
+      </div>
+
+      <!-- The only free numeric reading: visibility + plain-English reasoning -->
+      <div class="spot-vis-hero">
+        <div class="spot-vis-hero-main">
+          <span class="spot-vis-hero-label">TODAY'S VISIBILITY ESTIMATE</span>
+          <span class="spot-vis-hero-value" id="spotModalVis">—<span class="spot-tile-unit">FT</span></span>
           <div class="vis-meta" id="spotModalVisMeta"></div>
         </div>
-        <div class="spot-tile">
-          <span class="spot-tile-label">CHLOROPHYLL</span>
-          <span class="spot-tile-value" id="spotModalChloro">—<span class="spot-tile-unit">mg/m³</span></span>
-        </div>
-        <div class="spot-tile">
-          <span class="spot-tile-label">SWELL</span>
-          <span class="spot-tile-value" id="spotModalSwell">—<span class="spot-tile-unit">FT</span></span>
-        </div>
-        <div class="spot-tile">
-          <span class="spot-tile-label">WIND</span>
-          <span class="spot-tile-value" id="spotModalWind">—<span class="spot-tile-unit">KTS</span></span>
-        </div>
+        <!-- Descriptor: short text like "Clean water · Light swell · No recent rain".
+             Built from visibilityFactors labels — safe to show free (no raw numbers). -->
+        <p class="spot-vis-hero-descriptor" id="spotModalVisDescriptor">—</p>
       </div>
 
       <!-- Stale-data banner (shown only when yesterday's chlorophyll is used) -->
       <div id="spotModalStaleBanner"></div>
 
-      <!-- Factor chips — what's helping / hurting visibility right now -->
-      <div id="spotModalFactors"></div>
+      <!-- ── GATED DATA TILES (subscribers only) ─────────────────────── -->
+      <div class="spot-gated-tiles" id="spotGatedTiles">
+        <div class="spot-gated-header">
+          <span class="premium-chip">🔒 PREMIUM</span>
+          <h3>Raw data behind the estimate</h3>
+        </div>
+        <div class="spot-modal-tiles">
+          <div class="spot-tile">
+            <span class="spot-tile-label">CHLOROPHYLL</span>
+            <span class="spot-tile-value" id="spotModalChloro">—<span class="spot-tile-unit">mg/m³</span></span>
+          </div>
+          <div class="spot-tile">
+            <span class="spot-tile-label">SWELL</span>
+            <span class="spot-tile-value" id="spotModalSwell">—<span class="spot-tile-unit">FT</span></span>
+          </div>
+          <div class="spot-tile">
+            <span class="spot-tile-label">WIND</span>
+            <span class="spot-tile-value" id="spotModalWind">—<span class="spot-tile-unit">KTS</span></span>
+          </div>
+          <div class="spot-tile">
+            <span class="spot-tile-label">5-DAY RAIN</span>
+            <span class="spot-tile-value" id="spotModalRain">—<span class="spot-tile-unit">IN</span></span>
+          </div>
+        </div>
+        <!-- Factor chips — what's helping / hurting visibility right now -->
+        <div id="spotModalFactors"></div>
+      </div>
 
       <!-- PREMIUM SECTION -->
       <div class="spot-premium-wrap" id="spotPremiumWrap">

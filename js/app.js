@@ -174,21 +174,9 @@ function applyAuthUi() {
   }
 }
 
-// Handle redirects from the magic-link verify endpoint.
-function handleAuthRedirects() {
-  const params = new URLSearchParams(window.location.search);
-
-  if (params.get('auth_ok') === '1') {
-    showToast('✓ Signed in. Welcome aboard.');
-    window.history.replaceState({}, '', window.location.pathname);
-    // /api/me was fetched before this ran, but cookie landed in the redirect —
-    // refetch so the UI reflects the new session.
-    refreshMe().then(applyAuthUi);
-  } else if (params.get('auth_error') === '1') {
-    showToast('That sign-in link expired or was already used. Try again.', 'error');
-    window.history.replaceState({}, '', window.location.pathname);
-  }
-}
+// No-op kept for compatibility — magic link flow is gone, so nothing to
+// handle from the URL anymore. Leaving the function so init still compiles.
+function handleAuthRedirects() { /* noop */ }
 
 // Post-checkout redirect (?stripe_success=1&session_id=...): re-check /api/me
 // since the webhook should have just bumped us to pro.
@@ -542,33 +530,38 @@ function openSpotModal(slug) {
   const reading  = (conds && conds.spots && conds.spots[slug_]) || {};
   const details  = (DATA.spotDetails && DATA.spotDetails.spots && DATA.spotDetails.spots[slug_]) || null;
 
-  // Header
+  // ── Free: header ────────────────────────────────────────────────
   setText('spotModalName', spotMeta.name);
   const typeText = (spotMeta.type || '').toUpperCase();
   setText('spotModalMeta', `${typeText}  ·  Max Depth ${spotMeta.maxDepth}ft  ·  ${spotMeta.coords.lat.toFixed(3)}°, ${spotMeta.coords.lon.toFixed(3)}°`);
 
-  // Free tiles
-  setTileValue('spotModalVis',    reading.visibility,      'FT');
-  setTileValue('spotModalChloro', reading.chlorophyll,     'mg/m³');
-  setTileValue('spotModalSwell',  reading.waveHeightFt,    'FT');
-  setTileValue('spotModalWind',   reading.windKts,         'KTS');
+  // ── Free: hero photo + map ─────────────────────────────────────
+  renderSpotHeroMedia(spotMeta, details);
 
-  // Color the visibility tile by tier
+  // ── Free: visibility number + descriptor ───────────────────────
+  setTileValue('spotModalVis', reading.visibility, 'FT');
   const visTileEl = document.getElementById('spotModalVis');
   if (visTileEl) {
     visTileEl.classList.remove('vis-good', 'vis-moderate', 'vis-poor');
     const tier = visTierClass(reading.visibility);
     if (tier) visTileEl.classList.add(tier);
   }
-
-  // Range + confidence row
   renderVisMeta('spotModalVisMeta', reading);
+  renderVisDescriptor('spotModalVisDescriptor', reading.visibilityFactors || []);
 
   // Stale-data banner if any source is stale
   renderStaleBanner('spotModalStaleBanner', reading);
 
-  // Factor chips — ALL factors, full labels (numeric values hidden behind paywall via CSS)
+  // ── Gated: raw tiles + factor chips ────────────────────────────
+  setTileValue('spotModalChloro', reading.chlorophyll,     'mg/m³');
+  setTileValue('spotModalSwell',  reading.waveHeightFt,    'FT');
+  setTileValue('spotModalWind',   reading.windKts,         'KTS');
+  setTileValue('spotModalRain',   reading.totalRain5Day,   'IN');
+
   renderFactorChips('spotModalFactors', reading.visibilityFactors || []);
+
+  const gatedTiles = document.getElementById('spotGatedTiles');
+  if (gatedTiles) gatedTiles.classList.toggle('locked', !isSubscribed());
 
   // Premium content
   const premiumWrap = document.getElementById('spotPremiumWrap');
@@ -642,6 +635,65 @@ function renderVisMeta(elId, reading) {
     conf.className = `vis-confidence ${reading.visibilityConfidence}`;
     conf.textContent = `${reading.visibilityConfidence} confidence`;
     host.appendChild(conf);
+  }
+}
+
+// Build a short plain-English descriptor of why the algorithm landed on
+// this visibility estimate. Reuses factor labels (e.g. "Clean water",
+// "Light swell") — no raw numbers, so safe to show free.
+function renderVisDescriptor(elId, factors) {
+  const el = document.getElementById(elId);
+  if (!el) return;
+
+  if (!factors || !factors.length) {
+    el.textContent = 'Algorithm running on limited data today.';
+    return;
+  }
+
+  // Take up to 3 highest-signal factors: prefer 'large' severity, then 'medium'.
+  const ranked = [...factors].sort((a, b) => {
+    const rank = s => (s === 'large' ? 2 : s === 'medium' ? 1 : 0);
+    return rank(b.severity) - rank(a.severity);
+  });
+  const top = ranked.slice(0, 3).map(f => f.label).filter(Boolean);
+
+  el.innerHTML = '';
+  const prefix = document.createElement('span');
+  prefix.className = 'descriptor-prefix';
+  prefix.textContent = 'Based on';
+  el.appendChild(prefix);
+  el.appendChild(document.createTextNode(top.join(' · ')));
+}
+
+// Hero media for the spot modal: beach photo (optional, from details.imageUrl)
+// and an OpenStreetMap embed centered on the spot's coords.
+function renderSpotHeroMedia(spotMeta, details) {
+  // ── Photo ──────────────────────────────────────────────────────
+  const photoEl = document.getElementById('spotModalPhoto');
+  const photoWrap = photoEl ? photoEl.parentElement : null;
+  const imageUrl = (details && details.imageUrl) || spotMeta.imageUrl || '';
+  if (photoEl) {
+    if (imageUrl) {
+      photoWrap.classList.remove('no-photo');
+      photoEl.src = imageUrl;
+      photoEl.alt = `${spotMeta.name} — beach photo`;
+    } else {
+      // Trigger fallback without a broken-image icon flash
+      photoEl.removeAttribute('src');
+      if (photoWrap) photoWrap.classList.add('no-photo');
+    }
+  }
+
+  // ── Map: OpenStreetMap embed (no API key) ──────────────────────
+  const iframe = document.getElementById('spotModalMap');
+  if (iframe && spotMeta.coords) {
+    const { lat, lon } = spotMeta.coords;
+    // Small bbox around the spot (~0.01° ≈ 1 km)
+    const d = 0.01;
+    const bbox = [lon - d, lat - d, lon + d, lat + d].join(',');
+    const src  = `https://www.openstreetmap.org/export/embed.html` +
+      `?bbox=${encodeURIComponent(bbox)}&layer=mapnik&marker=${lat},${lon}`;
+    iframe.src = src;
   }
 }
 
@@ -802,34 +854,109 @@ async function startCheckout() {
 }
 
 // ══════════════════════════════════════════════════════════════════════════
-// MAGIC LINK SIGN-IN
+// AUTH — Username/password: login + register + logout + tab switcher
 // ══════════════════════════════════════════════════════════════════════════
-async function sendMagicLink() {
-  const emailEl = document.getElementById('loginEmail');
-  const msg     = document.getElementById('loginMsg');
-  const btn     = document.getElementById('loginSendBtn');
-  const email   = emailEl ? emailEl.value.trim() : '';
 
-  if (!email || !email.includes('@')) {
-    emailEl && emailEl.focus();
-    if (msg) msg.textContent = 'Please enter a valid email address.';
+// Toggle between the Sign in / Create account tabs inside the login modal.
+function switchAuthTab(which) {
+  const loginTab    = document.getElementById('authTabLogin');
+  const registerTab = document.getElementById('authTabRegister');
+  const loginPanel  = document.getElementById('authPanelLogin');
+  const regPanel    = document.getElementById('authPanelRegister');
+  if (!loginTab || !registerTab || !loginPanel || !regPanel) return;
+
+  const toRegister = which === 'register';
+  loginTab.classList.toggle('active',    !toRegister);
+  registerTab.classList.toggle('active',  toRegister);
+  loginTab.setAttribute('aria-selected',    String(!toRegister));
+  registerTab.setAttribute('aria-selected',  String(toRegister));
+  loginPanel.style.display = toRegister ? 'none' : 'block';
+  regPanel.style.display   = toRegister ? 'block' : 'none';
+}
+
+async function doLogin() {
+  const idEl    = document.getElementById('loginIdentifier');
+  const pwEl    = document.getElementById('loginPassword');
+  const msg     = document.getElementById('loginMsg');
+  const btn     = document.getElementById('loginBtn');
+
+  const identifier = idEl ? idEl.value.trim() : '';
+  const password   = pwEl ? pwEl.value        : '';
+
+  if (!identifier || !password) {
+    if (msg) msg.textContent = 'Enter your username/email and password.';
     return;
   }
 
-  if (btn) { btn.disabled = true; btn.textContent = 'Sending…'; }
+  setMsg(msg, '');
+  if (btn) { btn.disabled = true; btn.textContent = 'Signing in…'; }
 
   try {
     const res = await apiFetch('/api/auth/login', {
       method: 'POST',
-      body:   JSON.stringify({ email }),
+      body:   JSON.stringify({ identifier, password }),
     });
     const json = await res.json().catch(() => ({}));
-    if (msg) msg.textContent = json.message || 'Check your inbox for a sign-in link.';
-    if (emailEl) emailEl.value = '';
+    if (!res.ok) {
+      if (msg) msg.textContent = json.error || 'Sign in failed.';
+      return;
+    }
+    // Success — refresh session state, close modal, clear fields
+    await refreshMe();
+    applyAuthUi();
+    closeModal('loginModal');
+    if (pwEl) pwEl.value = '';
+    showToast(`Welcome back, ${json.username || 'diver'}.`);
   } catch {
-    if (msg) msg.textContent = 'Could not send link. Please try again.';
+    if (msg) msg.textContent = 'Could not reach the server. Try again.';
   } finally {
-    if (btn) { btn.disabled = false; btn.textContent = 'Send sign-in link'; }
+    if (btn) { btn.disabled = false; btn.textContent = 'Sign in'; }
+  }
+}
+
+async function doRegister() {
+  const userEl = document.getElementById('registerUsername');
+  const mailEl = document.getElementById('registerEmail');
+  const pwEl   = document.getElementById('registerPassword');
+  const msg    = document.getElementById('registerMsg');
+  const btn    = document.getElementById('registerBtn');
+
+  const username = userEl ? userEl.value.trim() : '';
+  const email    = mailEl ? mailEl.value.trim() : '';
+  const password = pwEl   ? pwEl.value          : '';
+
+  if (!username || !email || !password) {
+    if (msg) msg.textContent = 'Fill in all three fields.';
+    return;
+  }
+  if (password.length < 8) {
+    if (msg) msg.textContent = 'Password must be at least 8 characters.';
+    return;
+  }
+
+  setMsg(msg, '');
+  if (btn) { btn.disabled = true; btn.textContent = 'Creating…'; }
+
+  try {
+    const res = await apiFetch('/api/auth/register', {
+      method: 'POST',
+      body:   JSON.stringify({ username, email, password }),
+    });
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      if (msg) msg.textContent = json.error || 'Could not create account.';
+      return;
+    }
+    // Server signed us in with a cookie — refresh state and close.
+    await refreshMe();
+    applyAuthUi();
+    closeModal('loginModal');
+    if (pwEl) pwEl.value = '';
+    showToast(`Welcome aboard, ${json.username}.`);
+  } catch {
+    if (msg) msg.textContent = 'Could not reach the server. Try again.';
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'Create account'; }
   }
 }
 
@@ -841,6 +968,8 @@ async function logout() {
   applyAuthUi();
   showToast('Signed out.');
 }
+
+function setMsg(el, text) { if (el) el.textContent = text; }
 
 // ══════════════════════════════════════════════════════════════════════════
 // SMS ALERT FORM
