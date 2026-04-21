@@ -1,14 +1,19 @@
 /**
  * api/server.js
  *
- * Express backend for:
- *   - Stripe subscription checkout (Checkout Sessions + webhook)
- *   - Email alert registration (Resend)
- *   - Magic-link sign-in stubs
+ * Express backend:
+ *   - Magic-link auth + cookie sessions (api/auth.js, api/db.js)
+ *   - Stripe subscription checkout (gated on auth; persists sub state)
+ *   - Stripe webhook → updates user subscription_status in DB
+ *   - Email alerts (Resend)
  *   - Static file serving in production
  *
- * Deploy on any Node host (Railway, Render, Fly.io). Set BASE_URL to your
- * public domain. Static frontend is served from the project root.
+ * Cross-origin notes:
+ *   If the frontend is on a different origin than the API (e.g.
+ *   nauticalnick.net + api.nauticalnick.net), set CORS_ORIGIN in env
+ *   to the frontend origin. We enable `credentials: true` so cookies
+ *   flow across origins. If same-origin (Express serves everything),
+ *   leave CORS_ORIGIN unset.
  */
 
 require('dotenv').config({ path: require('path').join(__dirname, '..', '.env') });
@@ -21,29 +26,45 @@ const fs         = require('fs');
 const { Resend } = require('resend');
 const { v4: uuidv4 } = require('uuid');
 
+const db   = require('./db');
+const auth = require('./auth');
+
 const app  = express();
 const PORT = process.env.PORT || 3000;
 const BASE = process.env.BASE_URL || `http://localhost:${PORT}`;
+const IS_PROD = BASE.startsWith('https://') || process.env.NODE_ENV === 'production';
 
 const ALERTS_JSON = path.join(__dirname, '..', 'data', 'alerts.json');
 
-// Stripe — single instance, only if key set (lets dev run without it)
+// Stripe — single instance, only if key set
 const stripe = process.env.STRIPE_SECRET_KEY
   ? require('stripe')(process.env.STRIPE_SECRET_KEY)
   : null;
 
-// Resend (email) — single instance
+// Resend (email)
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 const FROM_EMAIL = process.env.FROM_EMAIL || 'alerts@nauticalnick.net';
 
 // ── Middleware ─────────────────────────────────────────────────────────────
 
-// Raw body needed for Stripe webhook signature verification — must come BEFORE express.json()
+// Raw body needed for Stripe webhook signature verification — MUST come
+// BEFORE express.json() so the webhook handler sees the raw bytes.
 app.use('/api/stripe-webhook', bodyParser.raw({ type: 'application/json' }));
 app.use(express.json());
-app.use(cors());
 
-// Serve static files (index.html, css, js, data, assets, etc.)
+// CORS — if frontend is cross-origin, set CORS_ORIGIN to the frontend origin
+// (e.g. https://nauticalnick.net). If same-origin, leave unset and cors()
+// will be a no-op for same-origin requests anyway.
+if (process.env.CORS_ORIGIN) {
+  app.use(cors({
+    origin:      process.env.CORS_ORIGIN.split(',').map(s => s.trim()),
+    credentials: true, // send cookies on cross-origin requests
+  }));
+} else {
+  app.use(cors()); // permissive for same-origin / dev
+}
+
+// Static files — served AFTER CORS but BEFORE routes so /api/* takes priority
 app.use(express.static(path.join(__dirname, '..')));
 
 // ── Health check ───────────────────────────────────────────────────────────
@@ -51,36 +72,30 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', ts: new Date().toISOString() });
 });
 
+// ── Auth routes ────────────────────────────────────────────────────────────
+app.use('/api', auth.buildRouter({
+  resend,
+  fromEmail: FROM_EMAIL,
+  baseUrl:   BASE,
+  isProd:    IS_PROD,
+}));
+
 // ═══════════════════════════════════════════════════════════════════════════
 // STRIPE — Create Checkout Session
 //
-// Uses Stripe's hosted checkout (no PCI scope for us). We pass the customer's
-// email so Stripe can pre-fill it, and `client_reference_id` so the webhook
-// can match the subscription back to them.
-//
-// Requires env vars:
-//   STRIPE_SECRET_KEY   — from Stripe dashboard → Developers → API keys
-//   STRIPE_PRICE_ID     — the Price (not Product) ID of your subscription
-//   STRIPE_WEBHOOK_SECRET — generated when you create the webhook endpoint
+// Now requires an authenticated session. The user's DB id is passed as
+// client_reference_id so the webhook can match the subscription back to
+// their account. The customer's email is pinned to the session user's
+// email (can't be spoofed from the request body anymore).
 // ═══════════════════════════════════════════════════════════════════════════
-app.post('/api/create-checkout-session', async (req, res) => {
-  const { email } = req.body;
-
-  if (!email || !email.includes('@')) {
-    return res.status(400).json({ error: 'valid email required' });
-  }
-
+app.post('/api/create-checkout-session', auth.requireAuth, async (req, res) => {
   if (!stripe) {
-    return res.status(503).json({
-      error: 'Stripe not configured. Set STRIPE_SECRET_KEY in .env',
-    });
+    return res.status(503).json({ error: 'Stripe not configured' });
   }
 
   const priceId = process.env.STRIPE_PRICE_ID;
   if (!priceId) {
-    return res.status(503).json({
-      error: 'Stripe price not configured. Set STRIPE_PRICE_ID in .env',
-    });
+    return res.status(503).json({ error: 'Stripe price not configured' });
   }
 
   try {
@@ -88,11 +103,9 @@ app.post('/api/create-checkout-session', async (req, res) => {
       mode: 'subscription',
       payment_method_types: ['card'],
       line_items: [{ price: priceId, quantity: 1 }],
-      customer_email: email,
-      client_reference_id: email, // used in webhook to tie sub → user
-      // Auto-calculate sales tax (requires Stripe Tax enabled in dashboard)
+      customer_email:      req.user.email,
+      client_reference_id: req.user.id,       // ← user ID, not email
       automatic_tax: { enabled: true },
-      // Require billing address for tax calc
       billing_address_collection: 'required',
       allow_promotion_codes: true,
       success_url: `${BASE}/?stripe_success=1&session_id={CHECKOUT_SESSION_ID}`,
@@ -107,18 +120,12 @@ app.post('/api/create-checkout-session', async (req, res) => {
 });
 
 // ═══════════════════════════════════════════════════════════════════════════
-// STRIPE — Webhook (subscription lifecycle events)
+// STRIPE — Webhook
 //
-// Configure in the Stripe dashboard → Developers → Webhooks:
-//   Endpoint URL: https://YOUR-DOMAIN/api/stripe-webhook
-//   Events:       checkout.session.completed
-//                 customer.subscription.created
-//                 customer.subscription.updated
-//                 customer.subscription.deleted
-//                 invoice.payment_failed
-//   Signing secret → STRIPE_WEBHOOK_SECRET env var
+// Every subscription lifecycle event lands here. We update the user row so
+// /api/me returns the correct pro status on the next page load.
 // ═══════════════════════════════════════════════════════════════════════════
-app.post('/api/stripe-webhook', (req, res) => {
+app.post('/api/stripe-webhook', async (req, res) => {
   if (!stripe) return res.status(503).send('Stripe not configured');
 
   const secret    = process.env.STRIPE_WEBHOOK_SECRET;
@@ -136,47 +143,78 @@ app.post('/api/stripe-webhook', (req, res) => {
     return res.status(401).send(`Webhook Error: ${err.message}`);
   }
 
-  switch (event.type) {
-    case 'checkout.session.completed': {
-      const session = event.data.object;
-      const email = session.customer_email || session.client_reference_id;
-      console.log(`[stripe] New subscriber: ${email} (customer: ${session.customer})`);
-      // In production: upsert subscriber in DB, mark active, send welcome email
-      break;
+  try {
+    switch (event.type) {
+      case 'checkout.session.completed': {
+        const s = event.data.object;
+        // client_reference_id is the user.id we set when creating the checkout
+        const userId     = s.client_reference_id;
+        const customerId = s.customer;
+        const email      = s.customer_email || s.customer_details?.email;
+
+        let user = userId ? db.getUserById(userId) : null;
+        // Fallback: match by email if id missing (e.g. legacy sessions)
+        if (!user && email) user = db.upsertUserByEmail(email);
+
+        if (user) {
+          // Attach stripe_customer_id so future subscription events can find
+          // this user without needing client_reference_id (it's only on the
+          // checkout.session.completed event, not on subscription.* events).
+          db.upsertUserByEmail(user.email, { stripe_customer_id: customerId });
+          console.log(`[stripe] ✓ Linked customer ${customerId} → user ${user.email}`);
+        } else {
+          console.warn('[stripe] checkout.session.completed with no user match:', s.id);
+        }
+        break;
+      }
+
+      case 'customer.subscription.created':
+      case 'customer.subscription.updated': {
+        const sub = event.data.object;
+        const updated = db.updateUserByStripeCustomer(sub.customer, {
+          subscription_status:             sub.status,
+          subscription_current_period_end: sub.current_period_end,
+        });
+        console.log(`[stripe] sub.${event.type.split('.').pop()}: customer=${sub.customer} status=${sub.status}` +
+          (updated ? ` → user=${updated.email}` : ' (no user match)'));
+        break;
+      }
+
+      case 'customer.subscription.deleted': {
+        const sub = event.data.object;
+        const updated = db.updateUserByStripeCustomer(sub.customer, {
+          subscription_status: 'canceled',
+        });
+        console.log(`[stripe] sub.deleted: customer=${sub.customer}` +
+          (updated ? ` → user=${updated.email}` : ' (no user match)'));
+        break;
+      }
+
+      case 'invoice.payment_succeeded': {
+        const inv = event.data.object;
+        console.log(`[stripe] payment_succeeded: ${inv.amount_paid / 100} ${inv.currency.toUpperCase()} from ${inv.customer}`);
+        break;
+      }
+
+      case 'invoice.payment_failed': {
+        const inv = event.data.object;
+        console.log(`[stripe] payment_failed: invoice=${inv.id} customer=${inv.customer}`);
+        break;
+      }
+
+      default:
+        console.log(`[stripe] Unhandled: ${event.type}`);
     }
-    case 'customer.subscription.created':
-    case 'customer.subscription.updated': {
-      const sub = event.data.object;
-      console.log(`[stripe] Sub ${sub.id} status=${sub.status}`);
-      break;
-    }
-    case 'customer.subscription.deleted': {
-      const sub = event.data.object;
-      console.log(`[stripe] Sub cancelled: ${sub.id}`);
-      break;
-    }
-    case 'invoice.payment_succeeded': {
-      const inv = event.data.object;
-      console.log(`[stripe] Payment succeeded: invoice ${inv.id} customer ${inv.customer} amount ${inv.amount_paid / 100} ${inv.currency.toUpperCase()}`);
-      // In production: mark subscription paid-through for inv.period_end,
-      // log revenue for analytics
-      break;
-    }
-    case 'invoice.payment_failed': {
-      const inv = event.data.object;
-      console.log(`[stripe] Payment failed on invoice ${inv.id} for customer ${inv.customer}`);
-      // In production: trigger dunning email, revoke access after grace period
-      break;
-    }
-    default:
-      console.log(`[stripe] Unhandled event: ${event.type}`);
+  } catch (err) {
+    console.error('[stripe] Webhook handler error:', err);
+    // Still 200 — we don't want Stripe to retry for our own bugs
   }
 
   res.json({ received: true });
 });
 
 // ═══════════════════════════════════════════════════════════════════════════
-// ALERTS — Set email alert
+// ALERTS — Set email alert (unchanged)
 // ═══════════════════════════════════════════════════════════════════════════
 app.post('/api/alerts/set', async (req, res) => {
   const { email, threshold, region } = req.body;
@@ -184,7 +222,6 @@ app.post('/api/alerts/set', async (req, res) => {
   if (!email || !threshold) {
     return res.status(400).json({ error: 'email and threshold required' });
   }
-
   if (!email.includes('@') || email.length < 5) {
     return res.status(400).json({ error: 'Invalid email address' });
   }
@@ -201,7 +238,6 @@ app.post('/api/alerts/set', async (req, res) => {
     try { data = JSON.parse(fs.readFileSync(ALERTS_JSON, 'utf8')); } catch {}
   }
 
-  // Match on email + region (one alert per region per email)
   const existing = data.alerts.find(a => a.email === email && a.region === regionSlug);
   if (existing) {
     existing.threshold = threshNum;
@@ -219,7 +255,6 @@ app.post('/api/alerts/set', async (req, res) => {
 
   fs.writeFileSync(ALERTS_JSON, JSON.stringify(data, null, 2));
 
-  // Send a confirmation email
   if (resend) {
     try {
       await resend.emails.send({
@@ -236,33 +271,6 @@ app.post('/api/alerts/set', async (req, res) => {
   res.json({
     message: `✓ Alert set! You'll get an email when ${prettyRegion(regionSlug)} visibility hits ${threshNum}ft.`,
   });
-});
-
-// ═══════════════════════════════════════════════════════════════════════════
-// AUTH — Magic link sign-in (stub)
-// ═══════════════════════════════════════════════════════════════════════════
-app.post('/api/send-magic-link', async (req, res) => {
-  const { email } = req.body;
-  if (!email) return res.status(400).json({ error: 'email required' });
-
-  // TODO: look up subscriber in a DB, mint a signed JWT, email the link
-  console.log(`[auth] Magic link requested for: ${email}`);
-
-  if (resend) {
-    try {
-      await resend.emails.send({
-        from:    `Nautical Nick <${FROM_EMAIL}>`,
-        to:      email,
-        subject: '🔑 Your Nautical Nick sign-in link',
-        html:    `<p>Click below to sign in to your Nautical Nick subscription:</p>
-                  <p><a href="${BASE}/?token=TODO">Sign in</a></p>`,
-      });
-    } catch (err) {
-      console.warn('[resend] Magic link send failed:', err.message);
-    }
-  }
-
-  res.json({ message: 'Check your inbox — a sign-in link is on its way.' });
 });
 
 // ── Helpers ────────────────────────────────────────────────────────────────
@@ -289,8 +297,9 @@ function confirmationEmailHtml(regionSlug, threshold) {
   `;
 }
 
-// ── Fallback: serve index.html for any unmatched route ────────────────────
-app.get('*', (req, res) => {
+// ── Fallback: serve index.html for any unmatched non-API route ─────────────
+app.get('*', (req, res, next) => {
+  if (req.path.startsWith('/api/')) return next();
   res.sendFile(path.join(__dirname, '..', 'index.html'));
 });
 
@@ -298,6 +307,9 @@ app.get('*', (req, res) => {
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`\n🌊 Nautical Nick server running on port ${PORT} (0.0.0.0)`);
   console.log(`   Local:        http://localhost:${PORT}`);
+  console.log(`   Base URL:     ${BASE}`);
   console.log(`   Stripe:       ${process.env.STRIPE_SECRET_KEY ? '✓ configured' : '✗ not configured'}`);
-  console.log(`   Resend:       ${process.env.RESEND_API_KEY ? '✓ configured' : '✗ not configured'}\n`);
+  console.log(`   Resend:       ${process.env.RESEND_API_KEY ? '✓ configured' : '✗ not configured'}`);
+  console.log(`   DB file:      ${db.DB_FILE}`);
+  console.log(`   Prod mode:    ${IS_PROD ? 'yes (secure cookies)' : 'no (plain cookies)'}\n`);
 });

@@ -6,3 +6,6 @@ node_modules/
 npm-debug.log*
 .vscode/
 .idea/
+
+# Runtime user/session DB — do not commit (use Railway Volume in prod)
+data-runtime/

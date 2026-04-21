@@ -111,7 +111,7 @@ All data lands in `data/*.json`. The frontend reads those JSON files on page loa
 | **Free** | $0 | Today's visibility, AI summary, pier cam snapshots, ads (Google AdSense) |
 | **Premium** | $4/month | Spot-by-spot breakdown, 14-day history chart, SMS alerts, ad-free |
 
-The paywall is client-side (localStorage `nn_sub_token` + `nn_sub_expiry`). After Stripe Checkout success, the user is redirected back with `?session_id=...` which the frontend stores. For production, add a server-side token verification endpoint that queries Stripe's subscription status on each page load.
+The paywall is server-verified. Users sign in via magic link (`/api/auth/login` → email → `/api/auth/verify` → HttpOnly cookie session). Stripe webhooks (`customer.subscription.*`) update the user's `subscription_status` in `data-runtime/users.json`. The frontend calls `/api/me` on load to learn whether the current user is Pro; the paywall unlocks based on that. localStorage is no longer used for auth.
 
 ---
 

@@ -62,6 +62,16 @@
         </div>
         <p class="last-updated-label">LAST UPDATED</p>
         <p class="last-updated-value" id="lastUpdated">—</p>
+
+        <!-- Account chip — visible only when signed in. Toggled by js/app.js. -->
+        <div class="account-chip" id="accountChip" style="display:none" data-pro="0">
+          <span class="account-badge" aria-hidden="true">👤</span>
+          <span class="account-email"></span>
+          <button type="button" class="account-logout" onclick="logout()" aria-label="Sign out">Sign out</button>
+        </div>
+
+        <!-- Sign-in link — visible only when NOT signed in -->
+        <a href="#" class="signin-link" onclick="openLoginModal(); return false;">Sign in</a>
       </div>
 
     </div>
@@ -365,12 +375,14 @@
       </ul>
       <p class="modal-price">$4.99 <span>/month</span> &nbsp;·&nbsp; Cancel anytime</p>
       <div class="modal-form">
-        <input type="email" id="subEmail" class="form-input" placeholder="your@email.com" autocomplete="email" />
         <button class="btn-subscribe modal-subscribe-btn" id="checkoutBtn" onclick="startCheckout()">
           Continue to Payment
         </button>
       </div>
-      <p class="modal-fine">Secure checkout via Stripe. Billed monthly. Cancel anytime.</p>
+      <p class="modal-fine">
+        Secure checkout via Stripe. Billed monthly. Cancel anytime.<br/>
+        <span class="signed-out-hint">Not signed in? We'll send you a sign-in link first.</span>
+      </p>
     </div>
   </div>
 
@@ -381,11 +393,11 @@
     <div class="modal-card">
       <button class="modal-close" onclick="closeModal('loginModal')" aria-label="Close">✕</button>
       <div class="modal-icon">🔑</div>
-      <h2 class="modal-title">Subscriber Sign-In</h2>
-      <p class="modal-desc">Enter your email to receive a magic sign-in link.</p>
+      <h2 class="modal-title">Sign In</h2>
+      <p class="modal-sub">No password. We email a one-click sign-in link.</p>
       <div class="modal-form">
         <input type="email" id="loginEmail" class="form-input" placeholder="your@email.com" autocomplete="email" />
-        <button class="btn-subscribe modal-subscribe-btn" onclick="sendMagicLink()">Send Sign-In Link</button>
+        <button class="btn-subscribe modal-subscribe-btn" id="loginSendBtn" onclick="sendMagicLink()">Send sign-in link</button>
       </div>
       <p class="modal-fine" id="loginMsg"></p>
     </div>

@@ -42,7 +42,12 @@
       "PowerShell(Resolve-DnsName api.nauticalnick.net -Type A -ErrorAction SilentlyContinue)",
       "PowerShell(nslookup nauticalnick.net 2>&1)",
       "PowerShell(nslookup api.nauticalnick.net 2>&1)",
-      "PowerShell(git commit -m \"Handle invoice.payment_succeeded webhook event explicitly\")"
+      "PowerShell(git commit -m \"Handle invoice.payment_succeeded webhook event explicitly\")",
+      "Bash(node -c api/server.js)",
+      "Bash(node -c api/auth.js)",
+      "Bash(node -c api/db.js)",
+      "Bash(node -c js/app.js)",
+      "Bash(timeout 3 node api/server.js)"
     ]
   }
 }

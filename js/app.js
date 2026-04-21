@@ -5,15 +5,29 @@
 ═══════════════════════════════════════════════════════════════════════════ */
 
 // ── API base URL ───────────────────────────────────────────────────────────
-const API_BASE = window.location.hostname === 'localhost'
-  ? 'http://localhost:3000'
-  : '';
+// Same-origin in prod (Express/Railway serves everything).
+// Cross-origin in dev + if NN_API_BASE is set on window before this script.
+const API_BASE = window.NN_API_BASE
+  ?? (window.location.hostname === 'localhost' ? 'http://localhost:3000' : '');
+
+// Every API call needs credentials:'include' so the session cookie flows.
+// We centralize fetch to guarantee this without forgetting.
+function apiFetch(pathname, opts = {}) {
+  return fetch(`${API_BASE}${pathname}`, {
+    credentials: 'include',
+    ...opts,
+    headers: {
+      'Content-Type': 'application/json',
+      ...(opts.headers || {}),
+    },
+  });
+}
 
 // ── Region state ───────────────────────────────────────────────────────────
 const REGION_KEY = 'nn_region';
 const DEFAULT_REGION = 'san-diego';
 
-// In-memory cache of loaded data files
+// In-memory cache of loaded data files + current auth state
 const DATA = {
   regions:     null,   // regions.json
   conditions:  null,   // conditions.json
@@ -22,20 +36,26 @@ const DATA = {
   spotDetails: null,   // spot-details.json
 };
 
+// Auth/subscription state — /api/me is the source of truth
+const STATE = {
+  me: null, // { authenticated, email?, pro?, subscriptionStatus?, currentPeriodEnd? }
+};
+
 // ══════════════════════════════════════════════════════════════════════════
 // INIT
 // ══════════════════════════════════════════════════════════════════════════
 document.addEventListener('DOMContentLoaded', async () => {
-  applySubscriptionState();
-
-  // Load all data files in parallel
-  await Promise.all([
+  // Auth + data in parallel — auth check doesn't block data load
+  const [_me] = await Promise.all([
+    refreshMe(),
     loadJSON('data/regions.json').then(d => DATA.regions = d),
     loadJSON('data/conditions.json').then(d => DATA.conditions = d),
     loadJSON('data/history.json').then(d => DATA.history = d),
     loadJSON('data/snapshots.json').then(d => DATA.snapshots = d).catch(() => DATA.snapshots = { snapshots: [] }),
     loadJSON('data/spot-details.json').then(d => DATA.spotDetails = d),
   ]);
+
+  applyAuthUi();
 
   // Wire up region dropdown
   const sel = document.getElementById('regionSelect');
@@ -47,6 +67,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   renderLastUpdated(DATA.conditions && DATA.conditions.lastUpdated);
+  handleAuthRedirects();
   checkSuccessRedirect();
 });
 
@@ -117,39 +138,78 @@ function currentRegionSlug() {
 }
 
 // ══════════════════════════════════════════════════════════════════════════
-// SUBSCRIPTION STATE
+// AUTH + SUBSCRIPTION STATE — server-verified
 // ══════════════════════════════════════════════════════════════════════════
-function applySubscriptionState() {
-  if (isSubscribed()) document.body.classList.add('subscribed');
+
+// Single source of truth: ask the server who we are.
+async function refreshMe() {
+  try {
+    const res = await apiFetch('/api/me');
+    if (!res.ok) { STATE.me = { authenticated: false }; return STATE.me; }
+    STATE.me = await res.json();
+  } catch {
+    STATE.me = { authenticated: false };
+  }
+  return STATE.me;
 }
 
-function isSubscribed() {
-  const token  = localStorage.getItem('nn_sub_token');
-  const expiry = localStorage.getItem('nn_sub_expiry');
-  if (!token || !expiry) return false;
-  return new Date() < new Date(expiry);
+function isSignedIn() { return !!(STATE.me && STATE.me.authenticated); }
+function isSubscribed() { return !!(STATE.me && STATE.me.pro); }
+
+// Toggle body classes + header account chip based on current auth state.
+function applyAuthUi() {
+  document.body.classList.toggle('subscribed', isSubscribed());
+  document.body.classList.toggle('signed-in',  isSignedIn());
+
+  const chip = document.getElementById('accountChip');
+  if (chip) {
+    if (isSignedIn()) {
+      chip.style.display = 'inline-flex';
+      const emailEl = chip.querySelector('.account-email');
+      if (emailEl) emailEl.textContent = STATE.me.email;
+      chip.dataset.pro = isSubscribed() ? '1' : '0';
+    } else {
+      chip.style.display = 'none';
+    }
+  }
 }
 
+// Handle redirects from the magic-link verify endpoint.
+function handleAuthRedirects() {
+  const params = new URLSearchParams(window.location.search);
+
+  if (params.get('auth_ok') === '1') {
+    showToast('✓ Signed in. Welcome aboard.');
+    window.history.replaceState({}, '', window.location.pathname);
+    // /api/me was fetched before this ran, but cookie landed in the redirect —
+    // refetch so the UI reflects the new session.
+    refreshMe().then(applyAuthUi);
+  } else if (params.get('auth_error') === '1') {
+    showToast('That sign-in link expired or was already used. Try again.', 'error');
+    window.history.replaceState({}, '', window.location.pathname);
+  }
+}
+
+// Post-checkout redirect (?stripe_success=1&session_id=...): re-check /api/me
+// since the webhook should have just bumped us to pro.
 function checkSuccessRedirect() {
   const params = new URLSearchParams(window.location.search);
-  // Stripe redirect: /?stripe_success=1&session_id=cs_...
-  const stripeSuccess = params.get('stripe_success');
-  if (!stripeSuccess) return;
-
-  // The canonical source of truth is the server-side subscription status;
-  // this local token is just a UX optimization so the paywall unlocks
-  // immediately on return from checkout.
-  const email = params.get('email') || 'subscriber';
-  // Store a 32-day local token (server-side subscription lookup should
-  // ultimately be the source of truth — this is just a nice UX unlock).
-  const expiry = new Date();
-  expiry.setDate(expiry.getDate() + 32);
-  localStorage.setItem('nn_sub_token', email);
-  localStorage.setItem('nn_sub_expiry', expiry.toISOString());
-  document.body.classList.add('subscribed');
+  if (params.get('stripe_success') !== '1') return;
 
   window.history.replaceState({}, '', window.location.pathname);
-  showToast('🎉 Welcome to Premium! All features unlocked.');
+  showToast('🎉 Welcome to Ocean Oracle Pro! Unlocking your account…');
+
+  // Webhook might race with this redirect. Poll /api/me a few times.
+  let tries = 0;
+  const iv = setInterval(async () => {
+    tries++;
+    await refreshMe();
+    applyAuthUi();
+    if (isSubscribed() || tries > 6) {
+      clearInterval(iv);
+      if (isSubscribed()) showToast('✓ All premium features unlocked.');
+    }
+  }, 1500);
 }
 
 // ══════════════════════════════════════════════════════════════════════════
@@ -705,15 +765,14 @@ function renderLastUpdated(isoString) {
 }
 
 // ══════════════════════════════════════════════════════════════════════════
-// STRIPE CHECKOUT
+// STRIPE CHECKOUT — requires an authenticated session
 // ══════════════════════════════════════════════════════════════════════════
 async function startCheckout() {
-  const emailEl = document.getElementById('subEmail');
-  const email = emailEl ? emailEl.value.trim() : '';
-
-  if (!email || !email.includes('@')) {
-    emailEl && emailEl.focus();
-    showToast('Please enter a valid email address.', 'error');
+  // Must be signed in first. If not, redirect to login modal.
+  if (!isSignedIn()) {
+    closeModal('subscribeModal');
+    openLoginModal();
+    showToast('Sign in first, then subscribe.', 'info');
     return;
   }
 
@@ -721,12 +780,17 @@ async function startCheckout() {
   if (btn) { btn.textContent = 'Redirecting…'; btn.disabled = true; }
 
   try {
-    const res = await fetch(`${API_BASE}/api/create-checkout-session`, {
+    const res = await apiFetch('/api/create-checkout-session', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email }),
+      body:   JSON.stringify({}),
     });
 
+    if (res.status === 401) {
+      showToast('Session expired. Please sign in again.', 'error');
+      closeModal('subscribeModal');
+      openLoginModal();
+      return;
+    }
     if (!res.ok) throw new Error('Server error');
     const { url } = await res.json();
     window.location.href = url;
@@ -743,21 +807,39 @@ async function startCheckout() {
 async function sendMagicLink() {
   const emailEl = document.getElementById('loginEmail');
   const msg     = document.getElementById('loginMsg');
+  const btn     = document.getElementById('loginSendBtn');
   const email   = emailEl ? emailEl.value.trim() : '';
 
-  if (!email) { emailEl && emailEl.focus(); return; }
+  if (!email || !email.includes('@')) {
+    emailEl && emailEl.focus();
+    if (msg) msg.textContent = 'Please enter a valid email address.';
+    return;
+  }
+
+  if (btn) { btn.disabled = true; btn.textContent = 'Sending…'; }
 
   try {
-    const res = await fetch(`${API_BASE}/api/send-magic-link`, {
+    const res = await apiFetch('/api/auth/login', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email }),
+      body:   JSON.stringify({ email }),
     });
-    const json = await res.json();
+    const json = await res.json().catch(() => ({}));
     if (msg) msg.textContent = json.message || 'Check your inbox for a sign-in link.';
+    if (emailEl) emailEl.value = '';
   } catch {
     if (msg) msg.textContent = 'Could not send link. Please try again.';
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'Send sign-in link'; }
   }
+}
+
+async function logout() {
+  try {
+    await apiFetch('/api/auth/logout', { method: 'POST' });
+  } catch {}
+  await refreshMe();
+  applyAuthUi();
+  showToast('Signed out.');
 }
 
 // ══════════════════════════════════════════════════════════════════════════
