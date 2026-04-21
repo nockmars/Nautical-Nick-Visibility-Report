@@ -1,16 +1,33 @@
 /**
  * fetch-satellite.js
  *
- * Fetches NOAA CoastWatch ERDDAP satellite chlorophyll data for every spot
- * in data/regions.json, plus a regional aggregate at each region's centerCoords.
+ * Fetches daily chlorophyll-a concentration per spot using a MULTI-SOURCE
+ * fallback chain. The first source that returns a valid reading wins;
+ * later sources are skipped. If every live source fails, we fall back to
+ * yesterday's stored reading and flag it as stale so the UI can display
+ * "showing yesterday's data."
  *
- * Dataset: erdMH1chla1day  (MODIS Aqua, 1-day composite)
- * ERDDAP uses 0–360 longitude, so -117.27 → 242.73.
+ * Source chain (in order of preference):
+ *   1. NOAA CoastWatch ERDDAP — erdMH1chla1day (MODIS Aqua, daily composite)
+ *      https://coastwatch.pfeg.noaa.gov
+ *      No auth.
  *
- * Writes:
- *   • sources.satellite on each region (using centerCoords)
- *   • spots[slug].chlorophyll on each region
- *   • lastUpdated timestamp
+ *   2. NOAA West Coast Node ERDDAP — erdVHNchla1day (VIIRS NPP, daily composite)
+ *      https://coastwatch.noaa.gov/erddap
+ *      No auth. Alternative satellite (VIIRS instead of MODIS) — useful when
+ *      one is missing a day.
+ *
+ *   3. NASA OceanColor ERDDAP — VIIRS or MODIS L3 (same underlying data
+ *      NOAA ingests, but direct from NASA).
+ *      https://oceandata.sci.gsfc.nasa.gov
+ *      Uses Earthdata login via HTTP Basic Auth. Env vars:
+ *        NASA_EARTHDATA_USER, NASA_EARTHDATA_PASS
+ *
+ *   4. Yesterday's stored reading (from conditions.json). Flagged as stale.
+ *
+ *   5. Null. Algorithm treats as "unknown" and uses regional baseline.
+ *
+ * ERDDAP uses 0–360 longitude, so -117.27 becomes 242.73.
  *
  * Usage: node scripts/fetch-satellite.js
  */
@@ -24,11 +41,34 @@ const fs    = require('fs');
 const REGIONS_JSON    = path.join(__dirname, '..', 'data', 'regions.json');
 const CONDITIONS_JSON = path.join(__dirname, '..', 'data', 'conditions.json');
 
-const ERDDAP_BASE = 'https://coastwatch.pfeg.noaa.gov/erddap/griddap';
-const DATASET    = 'erdMH1chla1day';
-
-// Throttle outbound ERDDAP requests — don't hammer their server.
 const REQUEST_DELAY_MS = 350;
+
+// NASA Earthdata credentials — must be set in env (Railway + GitHub Actions)
+const EARTHDATA_USER = process.env.NASA_EARTHDATA_USER;
+const EARTHDATA_PASS = process.env.NASA_EARTHDATA_PASS;
+const hasEarthdata   = !!(EARTHDATA_USER && EARTHDATA_PASS);
+
+// Source definitions — tried in order until one returns a valid reading
+const SOURCES = [
+  {
+    name: 'NOAA CoastWatch MODIS',
+    base: 'https://coastwatch.pfeg.noaa.gov/erddap/griddap',
+    dataset: 'erdMH1chla1day',
+    requiresAuth: false,
+  },
+  {
+    name: 'NOAA West Coast VIIRS',
+    base: 'https://coastwatch.noaa.gov/erddap/griddap',
+    dataset: 'noaacwNPPVIIRSSQchlaDaily',
+    requiresAuth: false,
+  },
+  {
+    name: 'NASA OceanColor MODIS',
+    base: 'https://oceandata.sci.gsfc.nasa.gov/erddap/griddap',
+    dataset: 'erdMH1chla1day',
+    requiresAuth: true,
+  },
+];
 
 // ── main ─────────────────────────────────────────────────────────────────
 async function main() {
@@ -36,67 +76,128 @@ async function main() {
   const conditions = loadConditions();
 
   console.log(`[satellite] Fetching chlorophyll for ${regions.length} regions…`);
+  console.log(`[satellite] Earthdata auth: ${hasEarthdata ? '✓ configured' : '✗ not configured (skipping NASA OceanColor)'}`);
+
+  const stats = { fresh: 0, stale: 0, unknown: 0 };
 
   for (const region of regions) {
     console.log(`\n[satellite] Region: ${region.displayName}`);
-
-    // Regional aggregate (uses centerCoords)
-    const center = await fetchChlorophyll(region.centerCoords.lat, region.centerCoords.lon);
     upsertRegion(conditions, region.slug);
     conditions.regions[region.slug].sources = conditions.regions[region.slug].sources || {};
-    conditions.regions[region.slug].sources.satellite = {
-      chlorophyll: center.chlorophyll,
-      unit:        'mg/m³',
-      note:        chlorophyllNote(center.chlorophyll),
-      timestamp:   center.timestamp,
-    };
-    console.log(`  · center chlorophyll: ${center.chlorophyll} mg/m³`);
+    const prevCenter = conditions.regions[region.slug].sources.satellite;
 
-    // Per-spot readings
+    // Regional aggregate
+    const center = await fetchWithFallbackChain(region.centerCoords.lat, region.centerCoords.lon);
+    const centerFinal = applyFallback(center, prevCenter);
+    conditions.regions[region.slug].sources.satellite = {
+      chlorophyll: centerFinal.chlorophyll,
+      unit:        'mg/m³',
+      source:      centerFinal.source,
+      note:        chlorophyllNote(centerFinal.chlorophyll),
+      timestamp:   centerFinal.timestamp,
+      stale:       centerFinal.stale,
+    };
+    updateStats(stats, centerFinal);
+    console.log(`  · center: ${formatChl(centerFinal)} [${centerFinal.source}]`);
+
+    // Per-spot
     conditions.regions[region.slug].spots = conditions.regions[region.slug].spots || {};
     for (const spot of region.spots) {
       await sleep(REQUEST_DELAY_MS);
-      const r = await fetchChlorophyll(spot.coords.lat, spot.coords.lon);
-      const existing = conditions.regions[region.slug].spots[spot.slug] || {};
+      const prevSpot = conditions.regions[region.slug].spots[spot.slug] || {};
+      const r = await fetchWithFallbackChain(spot.coords.lat, spot.coords.lon);
+      const rFinal = applyFallback(r, {
+        chlorophyll: prevSpot.chlorophyll,
+        timestamp:   prevSpot.chlorophyllTimestamp,
+      });
       conditions.regions[region.slug].spots[spot.slug] = {
-        ...existing,
-        chlorophyll: r.chlorophyll,
+        ...prevSpot,
+        chlorophyll:          rFinal.chlorophyll,
+        chlorophyllSource:    rFinal.source,
+        chlorophyllTimestamp: rFinal.timestamp,
+        chlorophyllStale:     rFinal.stale,
       };
-      console.log(`  · ${spot.slug}: ${r.chlorophyll ?? '—'} mg/m³`);
+      updateStats(stats, rFinal);
+      console.log(`  · ${spot.slug}: ${formatChl(rFinal)} [${rFinal.source}]`);
     }
   }
 
   conditions.lastUpdated = new Date().toISOString();
   fs.writeFileSync(CONDITIONS_JSON, JSON.stringify(conditions, null, 2));
-  console.log('\n[satellite] conditions.json updated.');
+  console.log(`\n[satellite] Summary: ${stats.fresh} fresh, ${stats.stale} stale, ${stats.unknown} unknown.`);
+  console.log('[satellite] conditions.json updated.');
 }
 
-// ── helpers ──────────────────────────────────────────────────────────────
-async function fetchChlorophyll(lat, lonSigned) {
-  // Convert -180..180 to 0..360 as ERDDAP expects
-  const lon = lonSigned < 0 ? 360 + lonSigned : lonSigned;
-  const url = `${ERDDAP_BASE}/${DATASET}.json?chlorophyll%5B(last)%5D%5B(${lat})%5D%5B(${lon})%5D`;
-
-  try {
-    const res  = await axios.get(url, { timeout: 20_000 });
-    const rows = res.data && res.data.table && res.data.table.rows;
-
-    if (rows && rows.length > 0) {
-      const cols   = res.data.table.columnNames;
-      const chlIdx = cols.indexOf('chlorophyll');
-      const tIdx   = cols.indexOf('time');
-      const chl    = parseFloat(rows[0][chlIdx]);
-
-      return {
-        chlorophyll: isNaN(chl) ? null : Math.round(chl * 100) / 100,
-        timestamp:   rows[0][tIdx] || new Date().toISOString(),
-      };
+// ── source chain ─────────────────────────────────────────────────────────
+async function fetchWithFallbackChain(lat, lonSigned) {
+  for (const source of SOURCES) {
+    if (source.requiresAuth && !hasEarthdata) continue;
+    try {
+      const result = await fetchChlorophyll(source, lat, lonSigned);
+      if (result.chlorophyll != null) {
+        return { ...result, source: source.name };
+      }
+    } catch (err) {
+      // swallow and fall through to next source
     }
-  } catch (err) {
-    console.warn(`  · ERDDAP fetch failed for ${lat},${lonSigned}: ${err.message}`);
+  }
+  return { chlorophyll: null, timestamp: new Date().toISOString(), source: null };
+}
+
+async function fetchChlorophyll(source, lat, lonSigned) {
+  const lon = lonSigned < 0 ? 360 + lonSigned : lonSigned;
+  const url = `${source.base}/${source.dataset}.json?chlorophyll%5B(last)%5D%5B(${lat})%5D%5B(${lon})%5D`;
+
+  const config = { timeout: 20_000 };
+  if (source.requiresAuth) {
+    config.auth = { username: EARTHDATA_USER, password: EARTHDATA_PASS };
   }
 
-  return { chlorophyll: null, timestamp: new Date().toISOString() };
+  const res = await axios.get(url, config);
+  const rows = res.data?.table?.rows;
+  if (!rows || rows.length === 0) return { chlorophyll: null, timestamp: null };
+
+  const cols   = res.data.table.columnNames;
+  const chlIdx = cols.indexOf('chlorophyll');
+  const tIdx   = cols.indexOf('time');
+  const chl    = parseFloat(rows[0][chlIdx]);
+
+  return {
+    chlorophyll: isNaN(chl) ? null : Math.round(chl * 100) / 100,
+    timestamp:   rows[0][tIdx] || new Date().toISOString(),
+  };
+}
+
+// ── fallback + helpers ───────────────────────────────────────────────────
+function applyFallback(fresh, prev) {
+  if (fresh.chlorophyll != null) {
+    return { ...fresh, stale: false };
+  }
+  if (prev && prev.chlorophyll != null) {
+    return {
+      chlorophyll: prev.chlorophyll,
+      source:      'yesterday (all live sources failed)',
+      timestamp:   prev.timestamp || null,
+      stale:       true,
+    };
+  }
+  return {
+    chlorophyll: null,
+    source:      'unavailable',
+    timestamp:   fresh.timestamp,
+    stale:       false,
+  };
+}
+
+function updateStats(stats, r) {
+  if (r.chlorophyll == null) stats.unknown++;
+  else if (r.stale) stats.stale++;
+  else stats.fresh++;
+}
+
+function formatChl(r) {
+  if (r.chlorophyll == null) return '— mg/m³ (unavailable)';
+  return `${r.chlorophyll} mg/m³${r.stale ? ' (STALE — using yesterday)' : ''}`;
 }
 
 function chlorophyllNote(val) {

@@ -37,7 +37,12 @@
       "PowerShell(git add api/server.js)",
       "PowerShell(git commit -m \"Bind to 0.0.0.0 explicitly for Railway proxy compatibility\")",
       "PowerShell(git commit -m \"Switch payments from LemonSqueezy to Stripe \\(US-only launch, lower fees, avoid LS/Stripe migration\\)\")",
-      "PowerShell(git reset --soft HEAD~1)"
+      "PowerShell(git reset --soft HEAD~1)",
+      "PowerShell(Resolve-DnsName nauticalnick.net -Type A -ErrorAction SilentlyContinue)",
+      "PowerShell(Resolve-DnsName api.nauticalnick.net -Type A -ErrorAction SilentlyContinue)",
+      "PowerShell(nslookup nauticalnick.net 2>&1)",
+      "PowerShell(nslookup api.nauticalnick.net 2>&1)",
+      "PowerShell(git commit -m \"Handle invoice.payment_succeeded webhook event explicitly\")"
     ]
   }
 }

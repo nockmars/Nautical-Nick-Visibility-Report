@@ -71,7 +71,7 @@
         { "slug": "avalon-bay",     "name": "Avalon Bay",             "coords": { "lat": 33.3425, "lon": -118.3269 }, "maxDepth": 30, "type": "bay" },
         { "slug": "lovers-cove",    "name": "Lover's Cove",           "coords": { "lat": 33.3417, "lon": -118.3189 }, "maxDepth": 35, "type": "cove" },
         { "slug": "pebbly-beach",   "name": "Pebbly Beach",           "coords": { "lat": 33.3364, "lon": -118.3217 }, "maxDepth": 45, "type": "reef" },
-        { "slug": "two-harbors",    "name": "Two Harbors",            "coords": { "lat": 33.4433, "lon": -118.4966 }, "maxDepth": 60, "type": "reef" }
+        { "slug": "two-harbors",    "name": "Two Harbors",            "coords": { "lat": 33.4433, "lon": -118.4966 }, "maxDepth": 60, "type": "harbor" }
       ]
     }
   ]

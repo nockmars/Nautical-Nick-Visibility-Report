@@ -353,13 +353,14 @@
     <div class="modal-card">
       <button class="modal-close" onclick="closeModal('subscribeModal')" aria-label="Close">✕</button>
       <div class="modal-icon">🐠</div>
-      <h2 class="modal-title">Go Premium</h2>
+      <h2 class="modal-title">Ocean Oracle Pro</h2>
+      <p class="modal-sub">Deep-dive intelligence for every dive spot.</p>
       <ul class="modal-perks">
-        <li>✔ Spearfishing rating analysis for every spot</li>
-        <li>✔ Seasonal fish abundance by spot — know what's running</li>
-        <li>✔ Hunting tips per species, per spot</li>
+        <li>✔ Exact chlorophyll, swell, wind, rain &amp; weather numbers per spot</li>
+        <li>✔ Spearfishing rating + seasonal fish abundance for every spot</li>
+        <li>✔ Hunting tips by species &amp; location</li>
         <li>✔ Email alerts when visibility hits your threshold</li>
-        <li>✔ AI-powered 14-day visibility predictions for each spot</li>
+        <li>✔ AI-powered 14-day visibility predictions</li>
         <li>✔ Ad-free experience</li>
       </ul>
       <p class="modal-price">$4.99 <span>/month</span> &nbsp;·&nbsp; Cancel anytime</p>
@@ -408,6 +409,7 @@
         <div class="spot-tile">
           <span class="spot-tile-label">VISIBILITY</span>
           <span class="spot-tile-value" id="spotModalVis">—<span class="spot-tile-unit">FT</span></span>
+          <div class="vis-meta" id="spotModalVisMeta"></div>
         </div>
         <div class="spot-tile">
           <span class="spot-tile-label">CHLOROPHYLL</span>
@@ -422,6 +424,12 @@
           <span class="spot-tile-value" id="spotModalWind">—<span class="spot-tile-unit">KTS</span></span>
         </div>
       </div>
+
+      <!-- Stale-data banner (shown only when yesterday's chlorophyll is used) -->
+      <div id="spotModalStaleBanner"></div>
+
+      <!-- Factor chips — what's helping / hurting visibility right now -->
+      <div id="spotModalFactors"></div>
 
       <!-- PREMIUM SECTION -->
       <div class="spot-premium-wrap" id="spotPremiumWrap">

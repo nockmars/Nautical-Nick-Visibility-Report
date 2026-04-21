@@ -396,15 +396,34 @@ function renderSpots(spots) {
     depth.textContent = `MAX ${spot.maxDepth}FT`;
     card.appendChild(depth);
 
-    // Visibility number
+    // Visibility number — with tier color class
     const visNum = document.createElement('span');
-    visNum.className = 'spot-vis';
+    visNum.className = `spot-vis ${visTierClass(spot.visibility)} glow`;
     visNum.textContent = spot.visibility != null ? spot.visibility : '—';
     const visUnit = document.createElement('div');
     visUnit.className = 'spot-vis-unit';
     visUnit.textContent = 'FT';
     card.appendChild(visNum);
     card.appendChild(visUnit);
+
+    // Range + confidence (new — under the vis number)
+    if (spot.visibilityRange || spot.visibilityConfidence) {
+      const meta = document.createElement('div');
+      meta.className = 'vis-meta';
+      if (spot.visibilityRange) {
+        const range = document.createElement('span');
+        range.className = 'vis-range';
+        range.textContent = `${spot.visibilityRange.low}–${spot.visibilityRange.high} ft`;
+        meta.appendChild(range);
+      }
+      if (spot.visibilityConfidence) {
+        const conf = document.createElement('span');
+        conf.className = `vis-confidence ${spot.visibilityConfidence}`;
+        conf.textContent = spot.visibilityConfidence;
+        meta.appendChild(conf);
+      }
+      card.appendChild(meta);
+    }
 
     // Progress bar
     const track = document.createElement('div');
@@ -417,8 +436,36 @@ function renderSpots(spots) {
     track.appendChild(fill);
     card.appendChild(track);
 
+    // Factor chips — top 2 most impactful, labels only (numbers paywalled)
+    if (Array.isArray(spot.visibilityFactors) && spot.visibilityFactors.length) {
+      const chips = document.createElement('div');
+      chips.className = 'factor-chips';
+      spot.visibilityFactors
+        .filter(f => f.severity !== 'small')
+        .slice(0, 2)
+        .forEach(f => {
+          const chip = document.createElement('span');
+          chip.className = `factor-chip ${f.impact} ${f.severity || 'medium'}`;
+          chip.title = f.reasoning || '';
+          const dot = document.createElement('span');
+          dot.className = 'dot';
+          chip.appendChild(dot);
+          chip.appendChild(document.createTextNode(f.label));
+          chips.appendChild(chip);
+        });
+      if (chips.children.length) card.appendChild(chips);
+    }
+
     grid.appendChild(card);
   });
+}
+
+// Tier helper: matches CSS classes for visibility color
+function visTierClass(visFt) {
+  if (visFt == null)     return '';
+  if (visFt >= 20)       return 'vis-good';
+  if (visFt >= 10)       return 'vis-moderate';
+  return 'vis-poor';
 }
 
 // ══════════════════════════════════════════════════════════════════════════
@@ -445,6 +492,23 @@ function openSpotModal(slug) {
   setTileValue('spotModalChloro', reading.chlorophyll,     'mg/m³');
   setTileValue('spotModalSwell',  reading.waveHeightFt,    'FT');
   setTileValue('spotModalWind',   reading.windKts,         'KTS');
+
+  // Color the visibility tile by tier
+  const visTileEl = document.getElementById('spotModalVis');
+  if (visTileEl) {
+    visTileEl.classList.remove('vis-good', 'vis-moderate', 'vis-poor');
+    const tier = visTierClass(reading.visibility);
+    if (tier) visTileEl.classList.add(tier);
+  }
+
+  // Range + confidence row
+  renderVisMeta('spotModalVisMeta', reading);
+
+  // Stale-data banner if any source is stale
+  renderStaleBanner('spotModalStaleBanner', reading);
+
+  // Factor chips — ALL factors, full labels (numeric values hidden behind paywall via CSS)
+  renderFactorChips('spotModalFactors', reading.visibilityFactors || []);
 
   // Premium content
   const premiumWrap = document.getElementById('spotPremiumWrap');
@@ -501,6 +565,56 @@ function setTileValue(elId, value, unit) {
   if (!el) return;
   const v = (value != null && value !== '') ? value : '—';
   el.innerHTML = `${v}<span class="spot-tile-unit">${unit}</span>`;
+}
+
+function renderVisMeta(elId, reading) {
+  const host = document.getElementById(elId);
+  if (!host) return;
+  host.innerHTML = '';
+  if (reading.visibilityRange) {
+    const range = document.createElement('span');
+    range.className = 'vis-range';
+    range.textContent = `Est. ${reading.visibilityRange.low}–${reading.visibilityRange.high} ft`;
+    host.appendChild(range);
+  }
+  if (reading.visibilityConfidence) {
+    const conf = document.createElement('span');
+    conf.className = `vis-confidence ${reading.visibilityConfidence}`;
+    conf.textContent = `${reading.visibilityConfidence} confidence`;
+    host.appendChild(conf);
+  }
+}
+
+function renderStaleBanner(elId, reading) {
+  const host = document.getElementById(elId);
+  if (!host) return;
+  host.innerHTML = '';
+  if (reading.chlorophyllStale) {
+    const msg = document.createElement('div');
+    msg.className = 'vis-stale-banner';
+    msg.textContent = '⚠️ Error retrieving today\'s satellite data — showing yesterday\'s chlorophyll reading.';
+    host.appendChild(msg);
+  }
+}
+
+function renderFactorChips(elId, factors) {
+  const host = document.getElementById(elId);
+  if (!host) return;
+  host.innerHTML = '';
+  if (!factors.length) return;
+  const wrap = document.createElement('div');
+  wrap.className = 'factor-chips';
+  factors.forEach(f => {
+    const chip = document.createElement('span');
+    chip.className = `factor-chip ${f.impact} ${f.severity || 'medium'}`;
+    chip.title = f.reasoning || '';
+    const dot = document.createElement('span');
+    dot.className = 'dot';
+    chip.appendChild(dot);
+    chip.appendChild(document.createTextNode(f.label));
+    wrap.appendChild(chip);
+  });
+  host.appendChild(wrap);
 }
 
 // ══════════════════════════════════════════════════════════════════════════

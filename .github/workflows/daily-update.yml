@@ -2,14 +2,14 @@ name: Daily Data Update
 
 on:
   schedule:
-    # 8:30 AM PDT = 15:30 UTC — runs after satellite data is refreshed
+    # 8:30 AM PDT = 15:30 UTC — runs after overnight satellite composites are published
     - cron: '30 15 * * *'
   workflow_dispatch:
 
 jobs:
   update:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
 
     steps:
       - name: Checkout repo
@@ -26,30 +26,43 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Fetch satellite chlorophyll data
+      - name: Fetch satellite chlorophyll (multi-source w/ NASA Earthdata fallback)
         env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          NASA_EARTHDATA_USER: ${{ secrets.NASA_EARTHDATA_USER }}
+          NASA_EARTHDATA_PASS: ${{ secrets.NASA_EARTHDATA_PASS }}
         run: node scripts/fetch-satellite.js
 
-      - name: Scrape JustGetWet report
+      - name: Fetch surf (swell + wind)
+        run: node scripts/fetch-surf.js
+
+      - name: Fetch weather + 5-day rain history
+        run: node scripts/fetch-weather.js
+
+      - name: Scrape JustGetWet (San Diego ground truth)
         run: node scripts/scrape-justgetwet.js
+        continue-on-error: true
+
+      - name: Compute reconciled visibility
+        run: node scripts/compute-visibility.js
 
       - name: Generate AI summary
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: node scripts/generate-summary.js
+        continue-on-error: true
 
-      - name: Send SMS alerts
+      - name: Send email alerts
         env:
-          TWILIO_ACCOUNT_SID:  ${{ secrets.TWILIO_ACCOUNT_SID }}
-          TWILIO_AUTH_TOKEN:   ${{ secrets.TWILIO_AUTH_TOKEN }}
-          TWILIO_PHONE_NUMBER: ${{ secrets.TWILIO_PHONE_NUMBER }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          FROM_EMAIL:     ${{ secrets.FROM_EMAIL }}
+          BASE_URL:       ${{ secrets.BASE_URL }}
         run: node scripts/send-alerts.js
+        continue-on-error: true
 
       - name: Commit and push updated data
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "GitHub Actions"
-          git add data/conditions.json data/history.json
+          git add data/conditions.json data/history.json || true
           git diff --staged --quiet || git commit -m "📊 Daily update $(date -u +%Y-%m-%d)"
           git push

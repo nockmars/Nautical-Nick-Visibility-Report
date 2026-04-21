@@ -2,10 +2,13 @@
  * update-all.js
  *
  * Master orchestrator — runs the full data pipeline in order:
- *   1. Fetch satellite chlorophyll
- *   2. Scrape JustGetWet
- *   3. Generate AI summary (synthesizes sources + derives visibility)
- *   4. Send SMS alerts
+ *   1. Fetch satellite chlorophyll (w/ yesterday-fallback)
+ *   2. Fetch surf (swell + wind)
+ *   3. Fetch weather (current + 5-day rain history)
+ *   4. Scrape JustGetWet (San Diego ground truth)
+ *   5. Compute reconciled visibility + range + confidence per spot
+ *   6. Generate AI summary
+ *   7. Send email alerts
  *
  * The pier cam captures run on their own separate schedules (see GitHub Actions).
  *
@@ -20,7 +23,9 @@ const path = require('path');
 const SCRIPTS = [
   { name: 'satellite',  file: 'fetch-satellite.js' },
   { name: 'surf',       file: 'fetch-surf.js' },
+  { name: 'weather',    file: 'fetch-weather.js' },
   { name: 'justgetwet', file: 'scrape-justgetwet.js' },
+  { name: 'compute',    file: 'compute-visibility.js' },
   { name: 'summary',    file: 'generate-summary.js' },
   { name: 'alerts',     file: 'send-alerts.js' },
 ];

@@ -1075,7 +1075,15 @@ body.subscribed .paywall-overlay { display: none !important; }
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--text);
+  margin-bottom: 6px;
+}
+
+.modal-sub {
+  font-size: 0.85rem;
+  color: var(--text-dim);
+  text-align: center;
   margin-bottom: 16px;
+  font-style: italic;
 }
 
 .modal-perks {
@@ -1545,4 +1553,103 @@ body.subscribed .spot-premium-wrap.locked {
 body:not([data-region="san-diego"]) .region-sd-only {
   display: none !important;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   VISIBILITY COLOR TIERS — Phase 1
+   Good ≥20ft (green) · Moderate 10–19ft (amber) · Poor <10ft (red)
+═══════════════════════════════════════════════════════════════════════════ */
+.vis-good     { color: #2ecc71 !important; }   /* emerald */
+.vis-moderate { color: #f39c12 !important; }   /* amber */
+.vis-poor     { color: #e74c3c !important; }   /* tomato */
+
+/* Soft glow that echoes the tier color — applied on large vis numbers */
+.vis-good.glow     { text-shadow: 0 0 16px rgba(46, 204, 113, 0.45); }
+.vis-moderate.glow { text-shadow: 0 0 16px rgba(243, 156, 18, 0.45); }
+.vis-poor.glow     { text-shadow: 0 0 16px rgba(231, 76, 60, 0.45); }
+
+/* Visibility RANGE + CONFIDENCE row (sits under the main vis number) */
+.vis-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  font-family: 'Exo 2', sans-serif;
+}
+.vis-range {
+  opacity: 0.85;
+}
+.vis-confidence {
+  padding: 2px 6px;
+  border-radius: 10px;
+  font-size: 0.6rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+.vis-confidence.high   { background: rgba(46, 204, 113, 0.15); color: #2ecc71; }
+.vis-confidence.medium { background: rgba(243, 156, 18, 0.15); color: #f39c12; }
+.vis-confidence.low    { background: rgba(231, 76, 60, 0.15);  color: #e74c3c; }
+
+/* Stale-data banner (when yesterday's chlorophyll is being used) */
+.vis-stale-banner {
+  background: rgba(243, 156, 18, 0.08);
+  border: 1px solid rgba(243, 156, 18, 0.3);
+  color: #f39c12;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  margin: 8px 0;
+  font-family: 'Exo 2', sans-serif;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   FACTOR CHIPS — small pills showing what's helping/hurting visibility
+───────────────────────────────────────────────────────────────────────── */
+.factor-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+.factor-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 0.72rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  font-family: 'Exo 2', sans-serif;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+.factor-chip.positive {
+  background: rgba(58, 134, 255, 0.12);   /* blue per spec */
+  color: #6cb0ff;
+  border-color: rgba(58, 134, 255, 0.3);
+}
+.factor-chip.negative {
+  background: rgba(231, 76, 60, 0.12);    /* red per spec */
+  color: #ff7b6c;
+  border-color: rgba(231, 76, 60, 0.3);
+}
+.factor-chip.neutral {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-muted);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+.factor-chip .dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.8;
+}
+.factor-chip.large  .dot { box-shadow: 0 0 6px currentColor; }
+.factor-chip.medium .dot { opacity: 0.7; }
+.factor-chip.small  .dot { opacity: 0.5; }
 
