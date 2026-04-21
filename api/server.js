@@ -2,7 +2,7 @@
  * api/server.js
  *
  * Express backend for:
- *   - LemonSqueezy subscription checkout (hosted checkout link + webhook)
+ *   - Stripe subscription checkout (Checkout Sessions + webhook)
  *   - Email alert registration (Resend)
  *   - Magic-link sign-in stubs
  *   - Static file serving in production
@@ -16,7 +16,6 @@ require('dotenv').config({ path: require('path').join(__dirname, '..', '.env') }
 const express    = require('express');
 const bodyParser = require('body-parser');
 const cors       = require('cors');
-const crypto     = require('crypto');
 const path       = require('path');
 const fs         = require('fs');
 const { Resend } = require('resend');
@@ -28,14 +27,19 @@ const BASE = process.env.BASE_URL || `http://localhost:${PORT}`;
 
 const ALERTS_JSON = path.join(__dirname, '..', 'data', 'alerts.json');
 
+// Stripe — single instance, only if key set (lets dev run without it)
+const stripe = process.env.STRIPE_SECRET_KEY
+  ? require('stripe')(process.env.STRIPE_SECRET_KEY)
+  : null;
+
 // Resend (email) — single instance
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 const FROM_EMAIL = process.env.FROM_EMAIL || 'alerts@nauticalnick.net';
 
 // ── Middleware ─────────────────────────────────────────────────────────────
 
-// Raw body needed for LemonSqueezy webhook HMAC verification
-app.use('/api/ls-webhook', bodyParser.raw({ type: 'application/json' }));
+// Raw body needed for Stripe webhook signature verification — must come BEFORE express.json()
+app.use('/api/stripe-webhook', bodyParser.raw({ type: 'application/json' }));
 app.use(express.json());
 app.use(cors());
 
@@ -48,89 +52,116 @@ app.get('/api/health', (req, res) => {
 });
 
 // ═══════════════════════════════════════════════════════════════════════════
-// LEMONSQUEEZY — Redirect to hosted checkout
+// STRIPE — Create Checkout Session
 //
-// LemonSqueezy gives you a permalink per variant (product). We append the
-// user's email + a `checkout[custom][user_email]` field so the webhook can
-// match the resulting subscription back to them.
+// Uses Stripe's hosted checkout (no PCI scope for us). We pass the customer's
+// email so Stripe can pre-fill it, and `client_reference_id` so the webhook
+// can match the subscription back to them.
+//
+// Requires env vars:
+//   STRIPE_SECRET_KEY   — from Stripe dashboard → Developers → API keys
+//   STRIPE_PRICE_ID     — the Price (not Product) ID of your subscription
+//   STRIPE_WEBHOOK_SECRET — generated when you create the webhook endpoint
 // ═══════════════════════════════════════════════════════════════════════════
-app.post('/api/create-checkout-session', (req, res) => {
+app.post('/api/create-checkout-session', async (req, res) => {
   const { email } = req.body;
 
   if (!email || !email.includes('@')) {
     return res.status(400).json({ error: 'valid email required' });
   }
 
-  const variantUrl = process.env.LS_CHECKOUT_URL; // e.g. https://nauticalnick.lemonsqueezy.com/buy/xxxxx
-  if (!variantUrl) {
+  if (!stripe) {
     return res.status(503).json({
-      error: 'LemonSqueezy not configured. Set LS_CHECKOUT_URL in .env',
+      error: 'Stripe not configured. Set STRIPE_SECRET_KEY in .env',
     });
   }
 
-  const url = new URL(variantUrl);
-  url.searchParams.set('checkout[email]', email);
-  url.searchParams.set('checkout[custom][user_email]', email);
-  // Return customer to the homepage with a success flag
-  url.searchParams.set('checkout[success_url]', `${BASE}/?ls_success=1&email=${encodeURIComponent(email)}`);
+  const priceId = process.env.STRIPE_PRICE_ID;
+  if (!priceId) {
+    return res.status(503).json({
+      error: 'Stripe price not configured. Set STRIPE_PRICE_ID in .env',
+    });
+  }
 
-  res.json({ url: url.toString() });
+  try {
+    const session = await stripe.checkout.sessions.create({
+      mode: 'subscription',
+      payment_method_types: ['card'],
+      line_items: [{ price: priceId, quantity: 1 }],
+      customer_email: email,
+      client_reference_id: email, // used in webhook to tie sub → user
+      // Auto-calculate sales tax (requires Stripe Tax enabled in dashboard)
+      automatic_tax: { enabled: true },
+      // Require billing address for tax calc
+      billing_address_collection: 'required',
+      allow_promotion_codes: true,
+      success_url: `${BASE}/?stripe_success=1&session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url:  `${BASE}/?stripe_cancelled=1`,
+    });
+
+    res.json({ url: session.url });
+  } catch (err) {
+    console.error('[stripe] Checkout session error:', err.message);
+    res.status(500).json({ error: 'Failed to create checkout session' });
+  }
 });
 
 // ═══════════════════════════════════════════════════════════════════════════
-// LEMONSQUEEZY — Webhook (subscription lifecycle events)
+// STRIPE — Webhook (subscription lifecycle events)
 //
-// Configure in the LemonSqueezy dashboard:
-//   URL:     https://YOUR-DOMAIN/api/ls-webhook
-//   Events:  subscription_created, subscription_updated, subscription_cancelled
-//   Secret:  random string, also set as LS_WEBHOOK_SECRET in .env
+// Configure in the Stripe dashboard → Developers → Webhooks:
+//   Endpoint URL: https://YOUR-DOMAIN/api/stripe-webhook
+//   Events:       checkout.session.completed
+//                 customer.subscription.created
+//                 customer.subscription.updated
+//                 customer.subscription.deleted
+//                 invoice.payment_failed
+//   Signing secret → STRIPE_WEBHOOK_SECRET env var
 // ═══════════════════════════════════════════════════════════════════════════
-app.post('/api/ls-webhook', (req, res) => {
-  const secret    = process.env.LS_WEBHOOK_SECRET;
-  const signature = req.headers['x-signature'];
+app.post('/api/stripe-webhook', (req, res) => {
+  if (!stripe) return res.status(503).send('Stripe not configured');
+
+  const secret    = process.env.STRIPE_WEBHOOK_SECRET;
+  const signature = req.headers['stripe-signature'];
 
   if (!secret || !signature) {
     return res.status(400).send('Webhook not configured');
   }
 
-  // Verify HMAC-SHA256 signature
-  const digest = crypto
-    .createHmac('sha256', secret)
-    .update(req.body)
-    .digest('hex');
-
-  const sigBuf = Buffer.from(signature, 'hex');
-  const digBuf = Buffer.from(digest, 'hex');
-
-  if (sigBuf.length !== digBuf.length || !crypto.timingSafeEqual(sigBuf, digBuf)) {
-    return res.status(401).send('Invalid signature');
-  }
-
   let event;
   try {
-    event = JSON.parse(req.body.toString('utf8'));
+    event = stripe.webhooks.constructEvent(req.body, signature, secret);
   } catch (err) {
-    return res.status(400).send('Invalid JSON');
+    console.error('[stripe] Webhook signature verification failed:', err.message);
+    return res.status(401).send(`Webhook Error: ${err.message}`);
   }
 
-  const eventName = event.meta && event.meta.event_name;
-  const email     = event.data?.attributes?.user_email
-                 || event.meta?.custom_data?.user_email;
-
-  switch (eventName) {
-    case 'subscription_created':
-      console.log(`[ls] New subscriber: ${email}`);
-      // In production: write the subscription + status to a database
+  switch (event.type) {
+    case 'checkout.session.completed': {
+      const session = event.data.object;
+      const email = session.customer_email || session.client_reference_id;
+      console.log(`[stripe] New subscriber: ${email} (customer: ${session.customer})`);
+      // In production: upsert subscriber in DB, mark active, send welcome email
       break;
-    case 'subscription_updated':
-      console.log(`[ls] Subscription updated: ${email} (status: ${event.data?.attributes?.status})`);
+    }
+    case 'customer.subscription.created':
+    case 'customer.subscription.updated': {
+      const sub = event.data.object;
+      console.log(`[stripe] Sub ${sub.id} status=${sub.status}`);
       break;
-    case 'subscription_cancelled':
-    case 'subscription_expired':
-      console.log(`[ls] Subscription ended: ${email}`);
+    }
+    case 'customer.subscription.deleted': {
+      const sub = event.data.object;
+      console.log(`[stripe] Sub cancelled: ${sub.id}`);
       break;
+    }
+    case 'invoice.payment_failed': {
+      const inv = event.data.object;
+      console.log(`[stripe] Payment failed on invoice ${inv.id} for customer ${inv.customer}`);
+      break;
+    }
     default:
-      console.log(`[ls] Unhandled event: ${eventName}`);
+      console.log(`[stripe] Unhandled event: ${event.type}`);
   }
 
   res.json({ received: true });
@@ -259,6 +290,6 @@ app.get('*', (req, res) => {
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`\n🌊 Nautical Nick server running on port ${PORT} (0.0.0.0)`);
   console.log(`   Local:        http://localhost:${PORT}`);
-  console.log(`   LemonSqueezy: ${process.env.LS_CHECKOUT_URL ? '✓ configured' : '✗ not configured'}`);
+  console.log(`   Stripe:       ${process.env.STRIPE_SECRET_KEY ? '✓ configured' : '✗ not configured'}`);
   console.log(`   Resend:       ${process.env.RESEND_API_KEY ? '✓ configured' : '✗ not configured'}\n`);
 });

@@ -32,7 +32,12 @@
       "PowerShell(git add package.json package-lock.json)",
       "PowerShell(git commit -m \"Regenerate package-lock.json to match dependencies \\(resend, remove stripe/twilio\\)\")",
       "PowerShell(git push 2>&1)",
-      "PowerShell(git add -A)"
+      "PowerShell(git add -A)",
+      "PowerShell(git commit -m \"Remove unrelated projects \\(levelup-habit-tracker, dashboard\\) - they belong in their own repos\")",
+      "PowerShell(git add api/server.js)",
+      "PowerShell(git commit -m \"Bind to 0.0.0.0 explicitly for Railway proxy compatibility\")",
+      "PowerShell(git commit -m \"Switch payments from LemonSqueezy to Stripe \\(US-only launch, lower fees, avoid LS/Stripe migration\\)\")",
+      "PowerShell(git reset --soft HEAD~1)"
     ]
   }
 }

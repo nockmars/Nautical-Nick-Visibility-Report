@@ -132,10 +132,13 @@ function isSubscribed() {
 
 function checkSuccessRedirect() {
   const params = new URLSearchParams(window.location.search);
-  // LemonSqueezy redirect: /?ls_success=1&email=foo@bar.com
-  const lsSuccess = params.get('ls_success');
-  if (!lsSuccess) return;
+  // Stripe redirect: /?stripe_success=1&session_id=cs_...
+  const stripeSuccess = params.get('stripe_success');
+  if (!stripeSuccess) return;
 
+  // The canonical source of truth is the server-side subscription status;
+  // this local token is just a UX optimization so the paywall unlocks
+  // immediately on return from checkout.
   const email = params.get('email') || 'subscriber';
   // Store a 32-day local token (server-side subscription lookup should
   // ultimately be the source of truth — this is just a nice UX unlock).
