@@ -117,8 +117,8 @@ index.html         Single-page app. Subscribe modal = "Ocean Oracle Pro".
 
 ### Nice-to-have
 - **Beach photos.** Currently every spot shows the fallback. Add `imageUrl` per spot in `data/regions.json` or `data/spot-details.json`.
-- **Bug to check:** `js/app.js` line ~508 references `f.impact` but compute-visibility.js writes `f.direction`. Factor chips on public spot cards may not be color-coding correctly. Trivial fix, just renaming one.
-- **Bug to check:** `applyAuthUi()` doesn't refresh an open spot modal's lock state. Edge case — user signs in while spot modal is already open. Low priority. Fix by re-toggling `#spotGatedTiles.locked` in `applyAuthUi()`.
+- ~~Bug to check: `js/app.js` line ~508 references `f.impact` but compute-visibility.js writes `f.direction`.~~ **Resolved 2026-04-22 — false alarm.** Verified: `compute-visibility.js` writes `impact` (lines 102, 112, 134, 142, 162, 210, 223), and `js/app.js` reads `f.impact` at lines 496 + 721. Both sides agree. No rename needed.
+- ~~Bug to check: `applyAuthUi()` doesn't refresh an open spot modal's lock state.~~ **Fixed 2026-04-22 commit `f41eead`** — added `STATE.openSpotSlug` tracking; `applyAuthUi()` now re-renders the open spot modal so paywall state updates immediately on sign-in / Pro upgrade.
 
 ### Architectural decisions explicitly made (don't revisit without cause)
 - **JSON file DB** over SQLite/Postgres. Fits MVP scale (<few thousand users), zero deps, no native modules, one file to back up. Migrate when it hurts, not before.
@@ -159,4 +159,11 @@ The user has handed over real secrets (NASA Earthdata password, Stripe keys) in 
 
 ---
 
-_Last updated: 2026-04-21 by Claude session at commit `a867836`._
+---
+
+## 2026-04-22 — Frontend bug-fix pass
+
+- **Bug 1 (`f.impact` vs `f.direction`):** No-op. PM analysis was incorrect — verified the actual field name in `scripts/compute-visibility.js` is `impact`, and `js/app.js` already reads it as `f.impact`. Renaming would have broken color-coding. Reported back to PM. No commit.
+- **Bug 2 (`applyAuthUi()` doesn't refresh open spot modal):** Fixed in commit `f41eead`. Added `STATE.openSpotSlug` (init in STATE block; set in `openSpotModal()`; cleared in `closeModal('spotModal')`, backdrop click, and Escape paths). At end of `applyAuthUi()`, if `#spotModal` is visible and `STATE.openSpotSlug` is set, calls `openSpotModal(slug)` to re-render with new auth state. Railway deploy verified — `/api/health` returns 200.
+
+_Last updated: 2026-04-22 by Claude session at commit `f41eead`._
