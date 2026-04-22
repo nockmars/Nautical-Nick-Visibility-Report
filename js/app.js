@@ -39,6 +39,7 @@ const DATA = {
 // Auth/subscription state — /api/me is the source of truth
 const STATE = {
   me: null, // { authenticated, email?, pro?, subscriptionStatus?, currentPeriodEnd? }
+  openSpotSlug: null, // slug of the spot currently shown in #spotModal, or null
 };
 
 // ══════════════════════════════════════════════════════════════════════════
@@ -170,6 +171,15 @@ function applyAuthUi() {
       chip.dataset.pro = isSubscribed() ? '1' : '0';
     } else {
       chip.style.display = 'none';
+    }
+  }
+
+  // If a spot modal is open while auth state changes (e.g. user signs in
+  // mid-modal), re-render it so paywall locks reflect the new auth state.
+  if (STATE.openSpotSlug) {
+    const spotModal = document.getElementById('spotModal');
+    if (spotModal && spotModal.style.display !== 'none' && spotModal.style.display !== '') {
+      openSpotModal(STATE.openSpotSlug);
     }
   }
 }
@@ -521,6 +531,7 @@ function visTierClass(visFt) {
 // ══════════════════════════════════════════════════════════════════════════
 function openSpotModal(slug) {
   const slug_ = slug;
+  STATE.openSpotSlug = slug_;
   const regionSlug = currentRegionSlug();
   const regionMeta = (DATA.regions.regions || []).find(r => r.slug === regionSlug);
   const spotMeta   = regionMeta ? regionMeta.spots.find(s => s.slug === slug_) : null;
@@ -1021,17 +1032,22 @@ function openLoginModal() {
 function closeModal(id) {
   const modal = document.getElementById(id);
   if (modal) modal.style.display = 'none';
+  if (id === 'spotModal') STATE.openSpotSlug = null;
 }
 
 document.addEventListener('click', e => {
   if (e.target.classList.contains('modal-backdrop')) {
     e.target.style.display = 'none';
+    if (e.target.id === 'spotModal') STATE.openSpotSlug = null;
   }
 });
 
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') {
-    document.querySelectorAll('.modal-backdrop').forEach(m => m.style.display = 'none');
+    document.querySelectorAll('.modal-backdrop').forEach(m => {
+      m.style.display = 'none';
+      if (m.id === 'spotModal') STATE.openSpotSlug = null;
+    });
   }
 });
 
