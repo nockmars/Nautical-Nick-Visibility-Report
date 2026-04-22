@@ -1,0 +1,21 @@
+@import "tailwindcss";
+
+/*
+  Tailwind v4 does NOT auto-load tailwind.config.ts. Backend registered
+  brand colors + font families there; we opt into that legacy-style
+  config explicitly via @config so `bg-nn-bg`, `text-nn-cyan`, `font-body`,
+  etc. are emitted into the bundle.
+
+  Phase 0 — minimal globals. The full css/style.css port (1,920 lines)
+  happens in Phase 4 alongside the component port. New components MUST
+  use Tailwind utilities; legacy CSS only ports if a component has
+  complex animations or elaborate custom styling that doesn't translate
+  cleanly to utility classes.
+*/
+
+@config "../tailwind.config.ts";
+
+@theme {
+  /* Marker for Phase 4 to add typography/spacing scales as native v4
+     design tokens (preferred over the JS config above going forward). */
+}
