@@ -48,7 +48,9 @@
       "Bash(node -c api/db.js)",
       "Bash(node -c js/app.js)",
       "Bash(timeout 3 node api/server.js)",
-      "PowerShell(Remove-Item -Path \"C:\\\\Users\\\\nickm\\\\Desktop\\\\Level Up! Habit Tracker\" -Force -Confirm:$false -ErrorAction SilentlyContinue)"
+      "PowerShell(Remove-Item -Path \"C:\\\\Users\\\\nickm\\\\Desktop\\\\Level Up! Habit Tracker\" -Force -Confirm:$false -ErrorAction SilentlyContinue)",
+      "Skill(update-config)",
+      "Skill(update-config:*)"
     ]
   }
 }
