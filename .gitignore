@@ -1,11 +1,19 @@
 node_modules/
 .env
 .env.local
+.env.*.local
 .DS_Store
 *.log
 npm-debug.log*
 .vscode/
 .idea/
+
+# Next.js build output
+.next/
+next-env.d.ts
+
+# TypeScript incremental cache
+*.tsbuildinfo
 
 # Runtime user/session DB — do not commit (use Railway Volume in prod)
 data-runtime/

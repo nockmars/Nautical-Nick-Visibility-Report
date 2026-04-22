@@ -1,0 +1,17 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// Placeholder model so `prisma generate` produces a valid client.
+// Backend agent will replace with real schema in Phase 1.
+model PlaceholderMigration {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+
+  @@map("_migration")
+}
