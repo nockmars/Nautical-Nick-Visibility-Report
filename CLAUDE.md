@@ -35,3 +35,29 @@ Always use **bash**. Never use PowerShell.
 - `scripts/` — Data pipeline (chlorophyll, surf, satellite, alerts)
 - `data/` — Cached data files
 - `assets/` — Static assets
+
+> Note: project is mid-migration to Next.js App Router + Postgres on Railway.
+> Post-migration structure will be `app/`, `components/`, `lib/`, `prisma/`, `scripts/`.
+
+## Agent Team
+
+This project uses `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`. Five specialized agents live in `.claude/agents/`. Route work through **project-manager** unless the task is obviously single-domain.
+
+| Agent | Model | Domain | DB Write |
+|---|---|---|---|
+| **project-manager** | Sonnet | Read-only orchestrator. Decomposes tasks, routes via SendMessage, holds context across multi-agent work. | none |
+| **frontend** | Sonnet | `app/`, `components/`, `styles/`, `lib/client/`, `hooks/`, `public/`. UI, routing, client state, accessibility. Uses Claude Preview tools for visual verification. | none |
+| **backend** | Sonnet | `app/api/`, `lib/db/`, `lib/auth/server*`, `lib/stripe/`, `prisma/`, `.github/workflows/`, `railway.json`, `middleware.ts`. Owns ALL deploy config + schema. | `users`, `sessions`, `subscriptions`, `comments`, `user_preferences`, `password_resets`, `email_verifications`, `locations` |
+| **ocean-data** | Sonnet | `scripts/fetchers/`, `scripts/scrapers/`, `scripts/captures/`, `scripts/parsers/`, `lib/data/`. NOAA, NASA, Open-Meteo, JustGetWet, Pier Cam. | `conditions`, `satellite_data`, `weather_data`, `tide_data`, `swell_data`, `chlorophyll_data` |
+| **visibility-reporter** | **Opus** | `lib/forecast/`, `lib/alerts/`, `lib/ai/`, `scripts/forecast/`, `scripts/alerts/`. The brain — visibility algorithm, Claude API forecasts + vision. | `forecasts`, `alerts`, `prediction_logs`, `forecast_cache` |
+
+### Hard Rules
+- Tool restrictions are enforced via system prompts, not a kernel sandbox. Agents MUST respect their `Forbidden` lists.
+- **Caching contract:** Claude API calls happen ONLY in scheduled cron jobs. Per-user-request paths read from the `forecasts` table. Never violate this.
+- Schema changes go through Backend. Other agents request via PM.
+- Cron schedule changes (`.github/workflows/*.yml`) go through Backend.
+
+### Skills
+- `/ship` — test → commit → push → verify Railway deploy → update HANDOFF
+- `/handoff` — write structured session handoff to `CLAUDE_HANDOFF.md`
+- `/add-beach` — multi-agent end-to-end add of a new dive spot
