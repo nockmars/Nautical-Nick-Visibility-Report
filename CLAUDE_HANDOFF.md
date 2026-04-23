@@ -161,6 +161,104 @@ The user has handed over real secrets (NASA Earthdata password, Stripe keys) in 
 
 ---
 
+## 2026-04-23 — Phase 0 complete; resume at Phase 1
+
+> **Resume cue:** When the user says "resume Phase 1" (or similar), start from the "Next Session: Start Here" block below. Branch `migration/next` is live on Railway preview at https://nautical-nick-visibility-report-migration.up.railway.app/ and renders the Hello World page. Production `main` is untouched.
+
+### Completed (this session)
+
+- `f41eead` (main) — fix: re-render open spot modal when auth state changes (bug 2). Bug 1 was a false alarm; PM had wrong field name in mind.
+- `782766d` (main) — feat: add agent team and skills for Next.js migration (5 agents in `.claude/agents/`, 3 skills in `.claude/skills/`, CLAUDE.md updated with roster + caching contract)
+- `b4846bb` (main) — docs: MIGRATION_BASELINE.md (verification checklist of the vanilla JS state)
+- `2454987` (migration/next) — chore: scaffold Next.js 15 + Prisma + Tailwind v4. Created `tsconfig.json`, `next.config.mjs`, `postcss.config.mjs`, `tailwind.config.ts` (with full `nn-*` brand palette extracted from `css/style.css` :root), `prisma/schema.prisma` (placeholder `PlaceholderMigration` model), `.env.example` updates, `.gitignore` updates. Renamed existing `start: node api/server.js` → `start:vanilla` and added `start: next start`. Pinned: next@15.5.15, react@19.2.5, @prisma/client@6.19.3, tailwindcss@4.2.4, typescript@5.9.3.
+- `9e9979e` (migration/next) — feat(frontend): App Router skeleton. `app/layout.tsx`, `app/page.tsx` (Hello World using `nn-*` Tailwind classes), `app/globals.css` with `@import "tailwindcss"; @config "../tailwind.config.ts";` (the @config directive is REQUIRED for Tailwind v4 to find a JS config file).
+- `3cc72fc` (migration/next) — chore(migration): point railway.json at Next.js build/start. `buildCommand: "npx prisma generate && next build"`, `startCommand: "npm start"`, `healthcheckPath: "/"`. Production main keeps its own railway.json with `node api/server.js` and `/api/health`.
+- Phase 0 verified live: Railway preview renders the cyan "Nautical Nick — Migration in Progress" page on dark teal. Programmatic verification via WebFetch confirmed title, h1, body text. Tailwind v4 @config workaround is in place.
+
+### In Progress / Pending
+
+- `MIGRATION_PLAN.md` (untracked, on disk only at repo root) — full Next.js migration plan with locked decisions. ~779 lines. Contains §8 Phase 0 detailed work breakdown and decisions for §1-7. **Not yet committed** — should commit at start of next session before continuing.
+- `.claude/launch.json` (modified, uncommitted) — Frontend added a Next Dev port 3001 entry for Claude Preview verification. Useful for future visual checks.
+- `.claude/settings.local.json` (modified, uncommitted) — local-only, do NOT commit.
+
+### Known Issues / Bugs
+
+- **Tailwind v4 + JS config requires explicit `@config` directive in CSS.** Frontend discovered this in Phase 0 — `@import "tailwindcss"` does NOT auto-discover `tailwind.config.ts` (that was v3 behavior). Fix is in place (`@config "../tailwind.config.ts";` in `app/globals.css`). Long-term Phase 4 cleanup: migrate the color palette into a `@theme` block in CSS and drop the JS config entirely. — severity: low (works fine as-is).
+- **PM produced false-positive bug analysis from a stale handoff note.** PM read CLAUDE_HANDOFF.md's older content and propagated a non-bug into the Phase 0 ticket. Frontend caught it. Mitigation: when PM analyzes "known issues" from old handoffs, it should verify against current source code before assigning fixes. — severity: low (caught before regression).
+- **`prisma db push` not yet run against preview Postgres.** Build proved Prisma client generates and DATABASE_URL is set in container. Deferred to Phase 1's first migration since the placeholder model isn't useful to push. — severity: none, by design.
+
+### Decisions Made (locked in MIGRATION_PLAN.md §7)
+
+1. **ORM: Prisma** (not Drizzle) — ecosystem maturity + AI training data. Reversible (Drizzle swap is a 1-day rewrite if needed).
+2. **Tailwind during migration**, not later — port `css/style.css` (1,920 lines) verbatim into Tailwind utilities in Phase 4. Components with complex animations may stay as CSS modules, Frontend's judgment per component. ALL new components must use Tailwind. Reversible per-component.
+3. **Backfill 14-day history** — Phase 5 task. Visibility Reporter synthesizes `forecasts` rows from `data/history.json` so the chart is full at cutover. Reversible (worst case the chart shows "Building 14-day history" for two weeks).
+4. **Force re-login at cutover** (not session migration) — magic-link → email+password too different to clean preserve. User will email existing accounts a heads-up before cutover (user action, not a migration task). Irreversible once cutover ships.
+5. **Same repo, `migration/next` branch, Railway preview env** — confirmed working topology.
+6. **Cutover: opportunistic with hard conditions** — only when (a) user well-rested, (b) 4+ uninterrupted hours, (c) all verification tests pass on Railway preview. NO late-night or pre-meeting cutovers.
+7. **Stripe test mode in Phase 1** — `STRIPE_PRICE_ID_MONTHLY`, `STRIPE_PRICE_ID_ANNUAL`, `STRIPE_WEBHOOK_SECRET` (test) in Railway preview env. Live keys stay in production env only.
+8. **Fix bugs on vanilla `main` first**, cherry-pick into `migration/next`. Done for bug 2 (`f41eead`). Bug 1 was a false alarm.
+
+### Railway state (migration env)
+
+- Project: `giving-happiness` (Railway's auto-name; rename anytime in project settings)
+- Environment: `migration` (separate from `production`)
+- Services in migration env (after cleanup):
+  - **Postgres** — Online, with `postgres-volume` (Railway-managed, normal)
+  - **Nautical-Nick-Visibility-...** — Online, deploying `migration/next` branch, Next.js
+- Public URL: https://nautical-nick-visibility-report-migration.up.railway.app/
+- Note: build/start commands live in `railway.json` (NOT in dashboard) because Railway defers to that file when present. Dashboard edits are blocked.
+- Variables on `Nautical-Nick-Visibility-...` in migration env: `DATABASE_URL` (referenced from Postgres). Other env vars (Stripe test keys, NEXTAUTH_SECRET, ANTHROPIC_API_KEY, etc.) need to be added before Phase 1 auth/Stripe work — see RAILWAY_PHASE_0_SETUP.md §3 for the full list.
+- Production (`main`) untouched throughout. `nauticalnick.net` still live on vanilla JS.
+
+### Next Session: Start Here — Phase 1 (Schema + Auth + Stripe + /api/health)
+
+**Resume command:** "Resume Phase 1."
+
+1. **First action:** commit the uncommitted `MIGRATION_PLAN.md` and selectively commit `.claude/launch.json` (skip `.claude/settings.local.json`):
+   ```bash
+   git checkout migration/next
+   git add MIGRATION_PLAN.md .claude/launch.json
+   git commit -m "docs: lock Phase 0 migration plan + add Next Dev launch config"
+   git push origin migration/next
+   ```
+
+2. **Have user fill in Railway env vars on `Nautical-Nick-Visibility-...` (migration env)** before Phase 1 code lands:
+   - `STRIPE_SECRET_KEY=sk_test_...` (Stripe test mode)
+   - `STRIPE_PRICE_ID_MONTHLY=price_test_...`
+   - `STRIPE_PRICE_ID_ANNUAL=price_test_...`
+   - `STRIPE_WEBHOOK_SECRET=whsec_test_...` (set after creating test webhook endpoint)
+   - `NEXTAUTH_SECRET=<openssl rand -base64 32>`
+   - `ANTHROPIC_API_KEY`, `RESEND_API_KEY`, `FROM_EMAIL`, `NASA_EARTHDATA_USER`, `NASA_EARTHDATA_PASS` — copy from production env
+   - `BASE_URL=https://nautical-nick-visibility-report-migration.up.railway.app`
+
+3. **Dispatch Backend agent to produce Phase 1 detailed work breakdown** (mirror Phase 0 process). Per `MIGRATION_PLAN.md` Phase 1 scope, Backend should plan:
+   - **Schema design** — full `prisma/schema.prisma` with: `users` (email, passwordHash, createdAt, lastLoginAt), `sessions` (token, userId, expiresAt), `subscriptions` (userId, stripeCustomerId, stripeSubscriptionId, status, tier, currentPeriodEnd), `email_verifications`, `password_resets`, `locations` (seed from `regions.json`/`spot-details.json`), placeholder tables for ocean data (full schema in Phase 2). Include indexes, FKs, snake_case mapping.
+   - **Auth library decision** — Argon2id (recommend) vs scrypt. Cookie name: keep as `naut_session` per plan. Session TTL: keep 60-day per existing convention. httpOnly + Secure + SameSite=Lax.
+   - **Auth routes** (App Router): `app/api/auth/signup/route.ts`, `app/api/auth/login/route.ts`, `app/api/auth/logout/route.ts`, `app/api/auth/me/route.ts`. Server actions optional alternative — let Backend choose.
+   - **Stripe**: `app/api/stripe/checkout/route.ts`, `app/api/stripe/webhook/route.ts`. Webhook handles `checkout.session.completed`, `customer.subscription.{created,updated,deleted}`, `invoice.payment_{succeeded,failed}`. Webhook URL on test webhook endpoint will be `{BASE_URL}/api/stripe/webhook`.
+   - **`/api/health`** — must return 200 with `{ status: "ok" }`. Then update `railway.json` healthcheckPath from `/` back to `/api/health`.
+   - **Migrations**: `npx prisma migrate dev --name initial` to lay down the schema. CI guard: build fails if `@anthropic-ai/sdk` is imported under `app/api/**` (caching contract).
+   - **Per-task assignment**: mostly Backend. Frontend may need to add login/signup UI placeholder pages (or stub for Phase 4).
+   - **Exit criteria**: schema deployed to preview Postgres, signup→login→logout flow works on preview URL via curl, `/api/health` returns 200, Stripe test checkout completes and webhook persists subscription row, `tsc --noEmit` clean.
+   - **Estimated time**: 4-6 hours (one long working session).
+
+4. **User reviews Phase 1 breakdown, locks decisions** (Argon2id confirm? session TTL confirm? email verification on or off for v1?). Then Backend executes.
+
+5. **Don't forget**: after Phase 1 schema lands, run `prisma db push` (or `migrate deploy`) against the Railway preview Postgres to satisfy the deferred Phase 0 exit criterion.
+
+### Key files to read first on resume
+
+- `MIGRATION_PLAN.md` (uncommitted at repo root) — full plan, locked decisions, Phase 0 breakdown for reference
+- `MIGRATION_BASELINE.md` — verification checklist (every box must tick before cutover)
+- `RAILWAY_PHASE_0_SETUP.md` — Railway provisioning + env var reference
+- `CLAUDE.md` — project conventions, agent roster, hard rules, caching contract
+- `.claude/agents/backend.md` — Backend agent definition (DB write permissions, owned paths)
+- `prisma/schema.prisma` — current placeholder schema (Phase 1 will replace)
+- `app/page.tsx` + `app/layout.tsx` — current Hello World, untouched in Phase 1
+- `railway.json` — current Next.js build/start commands (Phase 1 will switch healthcheck back to `/api/health` once Backend creates that route)
+
+---
+
 ## 2026-04-22 — Frontend bug-fix pass
 
 - **Bug 1 (`f.impact` vs `f.direction`):** No-op. PM analysis was incorrect — verified the actual field name in `scripts/compute-visibility.js` is `impact`, and `js/app.js` already reads it as `f.impact`. Renaming would have broken color-coding. Reported back to PM. No commit.

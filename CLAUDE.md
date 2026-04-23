@@ -39,6 +39,14 @@ Always use **bash**. Never use PowerShell.
 > Note: project is mid-migration to Next.js App Router + Postgres on Railway.
 > Post-migration structure will be `app/`, `components/`, `lib/`, `prisma/`, `scripts/`.
 
+## 🚧 Migration Status (read this on session start)
+
+- **Active branch:** `migration/next` (do work here; `main` is untouched live production)
+- **Phase 0:** ✅ Complete (2026-04-23). Next.js 15 + Prisma 6 + Tailwind v4 scaffolded, Railway preview live at https://nautical-nick-visibility-report-migration.up.railway.app/
+- **Phase 1:** ⏳ Pending — schema design + email/password auth + Stripe test-mode wiring + `/api/health`. Backend agent leads.
+- **Resume cue:** When the user says **"resume Phase 1"**, read the latest entry in `CLAUDE_HANDOFF.md` (top of file under today's date) — the "Next Session: Start Here" block has exact steps.
+- **Plan doc:** `MIGRATION_PLAN.md` at repo root has full phased plan + locked decisions.
+
 ## Agent Team
 
 This project uses `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`. Five specialized agents live in `.claude/agents/`. Route work through **project-manager** unless the task is obviously single-domain.
