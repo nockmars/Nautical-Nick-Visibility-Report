@@ -1,3 +1,13 @@
+// Prisma schema — Phase 1: full schema for users, sessions, subscriptions,
+// email_verifications, password_resets, locations, and ocean-data stubs.
+//
+// Conventions:
+//   - All models use @@map("snake_case_plural") and @map("snake_case") on fields.
+//   - UUIDs are managed by the DB via gen_random_uuid() via @default(dbgenerated(...)).
+//   - created_at / updated_at on every table.
+//   - Soft deletes not used (data is session/subscription based, hard deletes OK).
+//   - Indexes on all FK columns and WHERE columns per project conventions.
+
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
@@ -7,11 +17,320 @@ generator client {
   provider = "prisma-client-js"
 }
 
-// Placeholder model so `prisma generate` produces a valid client.
-// Backend agent will replace with real schema in Phase 1.
-model PlaceholderMigration {
-  id        Int      @id @default(autoincrement())
-  createdAt DateTime @default(now())
+// ─────────────────────────────────────────────────────────────────────────────
+// Auth tables — Backend owns
+// ─────────────────────────────────────────────────────────────────────────────
 
-  @@map("_migration")
+model User {
+  id              String    @id @default(cuid())
+  email           String    @unique
+  username        String?   @unique
+  passwordHash    String    @map("password_hash")
+  emailVerifiedAt DateTime? @map("email_verified_at")
+  lastLoginAt     DateTime? @map("last_login_at")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  sessions           Session[]
+  subscription       Subscription?
+  emailVerifications EmailVerification[]
+  passwordResets     PasswordReset[]
+
+  @@index([email])
+  @@index([username])
+  @@map("users")
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String   @map("user_id")
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  userAgent String?  @map("user_agent")
+  ip        String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@index([expiresAt])
+  @@index([userId])
+  @@map("sessions")
+}
+
+enum SubscriptionStatus {
+  active
+  canceled
+  past_due
+  trialing
+  incomplete
+}
+
+enum SubscriptionTier {
+  free
+  pro
+}
+
+model Subscription {
+  id                     String             @id @default(cuid())
+  userId                 String             @unique @map("user_id")
+  stripeCustomerId       String             @unique @map("stripe_customer_id")
+  stripeSubscriptionId   String             @unique @map("stripe_subscription_id")
+  status                 SubscriptionStatus
+  tier                   SubscriptionTier
+  currentPeriodEnd       DateTime           @map("current_period_end")
+  cancelAtPeriodEnd      Boolean            @default(false) @map("cancel_at_period_end")
+  createdAt              DateTime           @default(now()) @map("created_at")
+  updatedAt              DateTime           @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([stripeCustomerId])
+  @@index([userId])
+  @@map("subscriptions")
+}
+
+// Phase 2 — email verification. Table exists now; enforcement is OFF for v1.
+// When Phase 2 enables it: check emailVerifiedAt on login, send verification email on signup.
+model EmailVerification {
+  id        String    @id @default(cuid())
+  userId    String    @map("user_id")
+  token     String    @unique
+  expiresAt DateTime  @map("expires_at")
+  usedAt    DateTime? @map("used_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([token])
+  @@map("email_verifications")
+}
+
+// Phase 2 — password reset. Table exists now; flow is OFF for v1.
+model PasswordReset {
+  id        String    @id @default(cuid())
+  userId    String    @map("user_id")
+  token     String    @unique
+  expiresAt DateTime  @map("expires_at")
+  usedAt    DateTime? @map("used_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([token])
+  @@map("password_resets")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Locations — Backend owns; seeded from data/regions.json + data/spot-details.json
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Location {
+  id        String   @id @default(cuid())
+  slug      String   @unique
+  regionId  String   @map("region_id")
+  name      String
+  type      String   // beach | reef | cove | bay | harbor
+  maxDepth  Int      @map("max_depth")
+  latitude  Float
+  longitude Float
+  imageUrl  String?  @map("image_url")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Phase 2 — ocean-data owns these FK targets
+  conditions      Condition[]
+  satelliteData   SatelliteData[]
+  weatherData     WeatherData[]
+  tideData        TideData[]
+  swellData       SwellData[]
+  chlorophyllData ChlorophyllData[]
+
+  @@index([slug])
+  @@index([regionId])
+  @@map("locations")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Ocean-data tables — Phase 2, ocean-data agent owns.
+// Minimal stub fields only; ocean-data will flesh these out in Phase 2.
+// FKs to locations are ready so migrations are clean.
+// ─────────────────────────────────────────────────────────────────────────────
+
+// Phase 2 — ocean-data owns
+model Condition {
+  id          String   @id @default(cuid())
+  locationId  String   @map("location_id")
+  observedAt  DateTime @map("observed_at")
+  createdAt   DateTime @default(now()) @map("created_at")
+  // ocean-data will add: rain5dIn, sourceJson, etc. in Phase 2
+
+  location Location @relation(fields: [locationId], references: [id], onDelete: Cascade)
+
+  @@index([locationId])
+  @@index([observedAt])
+  @@map("conditions")
+}
+
+// Phase 2 — ocean-data owns
+model SatelliteData {
+  id         String   @id @default(cuid())
+  locationId String   @map("location_id")
+  observedAt DateTime @map("observed_at")
+  createdAt  DateTime @default(now()) @map("created_at")
+  // ocean-data will add: imageUrl, metadata, source, stale, etc. in Phase 2
+
+  location Location @relation(fields: [locationId], references: [id], onDelete: Cascade)
+
+  @@index([locationId])
+  @@index([observedAt])
+  @@map("satellite_data")
+}
+
+// Phase 2 — ocean-data owns
+model WeatherData {
+  id         String   @id @default(cuid())
+  locationId String   @map("location_id")
+  observedAt DateTime @map("observed_at")
+  createdAt  DateTime @default(now()) @map("created_at")
+  // ocean-data will add: windMph, windDir, tempF, source, stale, etc. in Phase 2
+
+  location Location @relation(fields: [locationId], references: [id], onDelete: Cascade)
+
+  @@index([locationId])
+  @@index([observedAt])
+  @@map("weather_data")
+}
+
+// Phase 2 — ocean-data owns
+model TideData {
+  id         String   @id @default(cuid())
+  locationId String   @map("location_id")
+  observedAt DateTime @map("observed_at")
+  createdAt  DateTime @default(now()) @map("created_at")
+  // ocean-data will add: tideFt, source, stale, etc. in Phase 2
+
+  location Location @relation(fields: [locationId], references: [id], onDelete: Cascade)
+
+  @@index([locationId])
+  @@index([observedAt])
+  @@map("tide_data")
+}
+
+// Phase 2 — ocean-data owns
+model SwellData {
+  id         String   @id @default(cuid())
+  locationId String   @map("location_id")
+  observedAt DateTime @map("observed_at")
+  createdAt  DateTime @default(now()) @map("created_at")
+  // ocean-data will add: waveHeightFt, periodS, directionDeg, source, stale, etc. in Phase 2
+
+  location Location @relation(fields: [locationId], references: [id], onDelete: Cascade)
+
+  @@index([locationId])
+  @@index([observedAt])
+  @@map("swell_data")
+}
+
+// Phase 2 — ocean-data owns
+model ChlorophyllData {
+  id         String   @id @default(cuid())
+  locationId String   @map("location_id")
+  observedAt DateTime @map("observed_at")
+  createdAt  DateTime @default(now()) @map("created_at")
+  // ocean-data will add: valueMgM3, source, stale, raw, etc. in Phase 2
+
+  location Location @relation(fields: [locationId], references: [id], onDelete: Cascade)
+
+  @@index([locationId])
+  @@index([observedAt])
+  @@map("chlorophyll_data")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Visibility Reporter tables — Phase 3, visibility-reporter agent owns.
+// Minimal stub fields only; visibility-reporter will flesh these out in Phase 3.
+// ─────────────────────────────────────────────────────────────────────────────
+
+// Phase 3 — visibility-reporter owns
+model Forecast {
+  id          String   @id @default(cuid())
+  locationId  String   @map("location_id")
+  generatedAt DateTime @map("generated_at")
+  createdAt   DateTime @default(now()) @map("created_at")
+  // visibility-reporter will add: visibilityFt, rangeLowFt, rangeHighFt,
+  // confidence, factors, summaryText, summaryModel, etc. in Phase 3
+
+  @@index([locationId])
+  @@index([generatedAt])
+  @@map("forecasts")
+}
+
+// Phase 3 — visibility-reporter owns
+model Alert {
+  id        String   @id @default(cuid())
+  email     String
+  userId    String?  @map("user_id")
+  region    String
+  createdAt DateTime @default(now()) @map("created_at")
+  // visibility-reporter will add: thresholdFt, lastSentDate, active, etc. in Phase 3
+
+  @@index([email])
+  @@index([userId])
+  @@index([region])
+  @@map("alerts")
+}
+
+// Phase 3 — visibility-reporter owns
+model PredictionLog {
+  id          String   @id @default(cuid())
+  locationId  String   @map("location_id")
+  generatedAt DateTime @map("generated_at")
+  createdAt   DateTime @default(now()) @map("created_at")
+  // visibility-reporter will add: inputSnapshot, outputSnapshot, claudeModel,
+  // claudeTokensIn, claudeTokensOut, etc. in Phase 3
+
+  @@index([locationId])
+  @@index([generatedAt])
+  @@map("prediction_logs")
+}
+
+// Phase 3 — visibility-reporter owns
+model ForecastCache {
+  key       String   @id
+  payload   Json
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([expiresAt])
+  @@map("forecast_cache")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// User extension tables — Backend owns
+// ─────────────────────────────────────────────────────────────────────────────
+
+// Phase 3 stub — backend owns, visibility-reporter reads for alert targeting
+model Comment {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  content   String
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  // explicitly out of scope for this migration per MIGRATION_PLAN §1 Non-Goals
+
+  @@index([userId])
+  @@map("comments")
+}
+
+// Backend owns — user notification + region preferences
+model UserPreference {
+  userId              String  @id @map("user_id")
+  defaultRegion       String? @map("default_region")
+  notificationOptIn   Boolean @default(false) @map("notification_opt_in")
+
+  @@map("user_preferences")
 }
