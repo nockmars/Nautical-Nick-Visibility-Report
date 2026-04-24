@@ -1,0 +1,45 @@
+name: CI — Caching Contract Guard
+
+# Enforces the rule: Claude API calls happen ONLY in cron jobs.
+# No @anthropic-ai/sdk import is allowed under app/api/**
+# (per-user-request paths must read from the forecasts table, not call Claude).
+
+on:
+  push:
+    branches:
+      - migration/next
+      - main
+    paths:
+      - 'app/api/**'
+  pull_request:
+    paths:
+      - 'app/api/**'
+
+jobs:
+  check-caching-contract:
+    name: Block @anthropic-ai/sdk imports in app/api/**
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Check for @anthropic-ai/sdk imports under app/api/**
+        run: |
+          echo "Scanning app/api/** for @anthropic-ai/sdk imports..."
+          if grep -r --include="*.ts" --include="*.tsx" --include="*.js" \
+               "@anthropic-ai/sdk" app/api/; then
+            echo ""
+            echo "ERROR: @anthropic-ai/sdk import found under app/api/**"
+            echo ""
+            echo "The caching contract requires that Claude API calls happen ONLY"
+            echo "in scheduled cron jobs (scripts/ or lib/ai/). Per-user-request"
+            echo "paths (app/api/**) must read from the forecasts table, not call"
+            echo "the Claude API directly."
+            echo ""
+            echo "Move the AI call to a cron entrypoint under scripts/ and cache"
+            echo "the result in the forecasts or forecast_cache table."
+            exit 1
+          else
+            echo "OK — no @anthropic-ai/sdk imports found in app/api/**"
+          fi
