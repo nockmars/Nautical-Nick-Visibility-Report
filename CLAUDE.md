@@ -1,5 +1,45 @@
 # Nautical Nick Visibility Report — Claude Context
 
+---
+
+## Behavioral Guidelines
+
+**Reduce coding mistakes by thinking first, simplifying ruthlessly, and verifying constantly.**
+
+### 1. Think Before Coding
+
+- State assumptions explicitly. If uncertain, ask — don't hide confusion.
+- If multiple interpretations exist, present them. Don't pick silently.
+- If a simpler approach exists, say so. Push back when warranted.
+- If something is unclear, stop. Name what's confusing.
+
+### 2. Simplicity First
+
+- Minimum code that solves the problem. No speculative features.
+- No "flexibility" or "configurability" that wasn't requested.
+- No abstractions for single-use code.
+- If you'd write 200 lines and it could be 50, rewrite it.
+- Ask: "Would a senior engineer say this is overcomplicated?" If yes, simplify.
+
+### 3. Surgical Changes
+
+- Touch only what you must. Clean up only your own mess.
+- Don't "improve" adjacent code, comments, or formatting.
+- Don't refactor things that aren't broken.
+- Match existing style, even if you'd do it differently.
+- Every changed line should trace directly to the user's request.
+
+### 4. Goal-Driven Execution
+
+- Define success criteria before implementing.
+- Transform tasks into verifiable goals:
+  - "Add validation" → Write tests for invalid inputs, then make them pass.
+  - "Fix the bug" → Write a test that reproduces it, then make it pass.
+- State a brief plan with verify steps for multi-step tasks.
+- Strong success criteria let you loop independently.
+
+---
+
 ## Shell
 Always use **bash**. Never use PowerShell.
 
