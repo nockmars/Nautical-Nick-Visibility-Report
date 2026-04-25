@@ -17,6 +17,12 @@
     "summary": "node scripts/generate-summary.js",
     "alerts": "node scripts/send-alerts.js",
     "update": "node scripts/update-all.js",
+    "satellite:ts": "tsx scripts/fetchers/fetch-satellite.ts",
+    "surf:ts": "tsx scripts/fetchers/fetch-surf.ts",
+    "weather:ts": "tsx scripts/fetchers/fetch-weather.ts",
+    "scrape:ts": "tsx scripts/scrapers/scrape-justgetwet.ts",
+    "capture:ts": "tsx scripts/captures/capture-pier-cam.ts",
+    "update:ts": "tsx scripts/update-all.ts",
     "test": "jest",
     "test:watch": "jest --watch"
   },
@@ -51,6 +57,7 @@
     "puppeteer": "^22.8.0",
     "tailwindcss": "^4.2.4",
     "ts-jest": "^29.2.5",
+    "tsx": "^4.21.0",
     "typescript": "^5.9.3"
   },
   "engines": {
@@ -66,14 +73,23 @@
       "**/*.test.ts"
     ],
     "transform": {
-      "^.+\\.tsx?$": ["ts-jest", {
-        "tsconfig": {
-          "module": "commonjs",
-          "moduleResolution": "node"
+      "^.+\\.tsx?$": [
+        "ts-jest",
+        {
+          "tsconfig": {
+            "module": "commonjs",
+            "moduleResolution": "node"
+          }
         }
-      }]
+      ]
     },
-    "moduleFileExtensions": ["ts", "tsx", "js", "jsx", "json"],
+    "moduleFileExtensions": [
+      "ts",
+      "tsx",
+      "js",
+      "jsx",
+      "json"
+    ],
     "collectCoverageFrom": [
       "lib/**/*.ts",
       "app/api/**/*.ts"

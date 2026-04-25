@@ -156,82 +156,106 @@ model Location {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Ocean-data tables — Phase 2, ocean-data agent owns.
-// Minimal stub fields only; ocean-data will flesh these out in Phase 2.
-// FKs to locations are ready so migrations are clean.
 // ─────────────────────────────────────────────────────────────────────────────
 
 // Phase 2 — ocean-data owns
 model Condition {
-  id          String   @id @default(cuid())
-  locationId  String   @map("location_id")
-  observedAt  DateTime @map("observed_at")
-  createdAt   DateTime @default(now()) @map("created_at")
-  // ocean-data will add: rain5dIn, sourceJson, etc. in Phase 2
+  id         String   @id @default(cuid())
+  locationId String   @map("location_id")
+  computedAt DateTime @map("computed_at")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  rain5dIn   Float?   @map("rain_5d_in")
+  sourceJson Json?    @map("source_json")
 
   location Location @relation(fields: [locationId], references: [id], onDelete: Cascade)
 
   @@index([locationId])
-  @@index([observedAt])
+  @@index([computedAt])
   @@map("conditions")
 }
 
 // Phase 2 — ocean-data owns
 model SatelliteData {
-  id         String   @id @default(cuid())
-  locationId String   @map("location_id")
-  observedAt DateTime @map("observed_at")
-  createdAt  DateTime @default(now()) @map("created_at")
-  // ocean-data will add: imageUrl, metadata, source, stale, etc. in Phase 2
+  id          String   @id @default(cuid())
+  locationId  String   @map("location_id")
+  fetchedAt   DateTime @map("fetched_at")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  imageUrl    String?  @map("image_url")
+  captureTime String?  @map("capture_time")
+  metadata    Json?
+  source      String   @default("scripps-pier-cam")
+  stale       Boolean  @default(false)
 
   location Location @relation(fields: [locationId], references: [id], onDelete: Cascade)
 
   @@index([locationId])
-  @@index([observedAt])
+  @@index([fetchedAt])
   @@map("satellite_data")
 }
 
 // Phase 2 — ocean-data owns
 model WeatherData {
-  id         String   @id @default(cuid())
-  locationId String   @map("location_id")
-  observedAt DateTime @map("observed_at")
-  createdAt  DateTime @default(now()) @map("created_at")
-  // ocean-data will add: windMph, windDir, tempF, source, stale, etc. in Phase 2
+  id              String   @id @default(cuid())
+  locationId      String   @map("location_id")
+  fetchedAt       DateTime @map("fetched_at")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  windMph         Float?   @map("wind_mph")
+  windDir         String?  @map("wind_dir")
+  tempF           Float?   @map("temp_f")
+  cloudPct        Int?     @map("cloud_pct")
+  condition       String?
+  rain5dIn        Float?   @map("rain_5d_in")
+  rainHistoryJson Json?    @map("rain_history_json")
+  source          String
+  stale           Boolean  @default(false)
 
   location Location @relation(fields: [locationId], references: [id], onDelete: Cascade)
 
   @@index([locationId])
-  @@index([observedAt])
+  @@index([fetchedAt])
   @@map("weather_data")
 }
 
-// Phase 2 — ocean-data owns
+// Phase 2 — ocean-data owns (table reserved, no fetcher yet)
 model TideData {
   id         String   @id @default(cuid())
   locationId String   @map("location_id")
-  observedAt DateTime @map("observed_at")
+  fetchedAt  DateTime @map("fetched_at")
   createdAt  DateTime @default(now()) @map("created_at")
-  // ocean-data will add: tideFt, source, stale, etc. in Phase 2
+
+  tideFt     Float?   @map("tide_ft")
+  source     String   @default("reserved")
+  stale      Boolean  @default(false)
 
   location Location @relation(fields: [locationId], references: [id], onDelete: Cascade)
 
   @@index([locationId])
-  @@index([observedAt])
+  @@index([fetchedAt])
   @@map("tide_data")
 }
 
 // Phase 2 — ocean-data owns
 model SwellData {
-  id         String   @id @default(cuid())
-  locationId String   @map("location_id")
-  observedAt DateTime @map("observed_at")
-  createdAt  DateTime @default(now()) @map("created_at")
-  // ocean-data will add: waveHeightFt, periodS, directionDeg, source, stale, etc. in Phase 2
+  id           String   @id @default(cuid())
+  locationId   String   @map("location_id")
+  fetchedAt    DateTime @map("fetched_at")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  waveHeightFt Float?   @map("wave_height_ft")
+  periodS      Int?     @map("period_s")
+  directionDeg Float?   @map("direction_deg")
+  windKts      Float?   @map("wind_kts")
+  windDir      String?  @map("wind_dir")
+  source       String
+  stale        Boolean  @default(false)
 
   location Location @relation(fields: [locationId], references: [id], onDelete: Cascade)
 
   @@index([locationId])
-  @@index([observedAt])
+  @@index([fetchedAt])
   @@map("swell_data")
 }
 
@@ -239,14 +263,18 @@ model SwellData {
 model ChlorophyllData {
   id         String   @id @default(cuid())
   locationId String   @map("location_id")
-  observedAt DateTime @map("observed_at")
+  fetchedAt  DateTime @map("fetched_at")
   createdAt  DateTime @default(now()) @map("created_at")
-  // ocean-data will add: valueMgM3, source, stale, raw, etc. in Phase 2
+
+  valueMgM3  Float?   @map("value_mg_m3")
+  source     String
+  stale      Boolean  @default(false)
+  raw        Json?
 
   location Location @relation(fields: [locationId], references: [id], onDelete: Cascade)
 
   @@index([locationId])
-  @@index([observedAt])
+  @@index([fetchedAt])
   @@map("chlorophyll_data")
 }
 
