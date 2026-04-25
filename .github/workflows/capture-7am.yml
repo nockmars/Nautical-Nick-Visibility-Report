@@ -20,8 +20,6 @@ jobs:
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -37,14 +35,10 @@ jobs:
 
       - name: Capture pier cam screenshot
         env:
+          DATABASE_URL:      ${{ secrets.DATABASE_URL }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          CAPTURE_TIME: '07:00'
-        run: node scripts/capture-pier-cam.js
-
-      - name: Commit and push snapshot
-        run: |
-          git config --local user.email "github-actions[bot]@users.noreply.github.com"
-          git config --local user.name "GitHub Actions"
-          git add data/snapshots/ data/snapshots.json
-          git diff --staged --quiet || git commit -m "📷 Pier cam 7AM $(date -u +%Y-%m-%d)"
-          git push
+          CAPTURE_TIME:      '07:00'
+        run: npx tsx scripts/captures/capture-pier-cam.ts
+        # JPG snapshots are written to data/snapshots/ on the Railway persistent volume.
+        # They are NOT committed back to the repo. satellite_data.image_url references
+        # the relative path (data/snapshots/<date>-<time>.jpg) served from the volume.

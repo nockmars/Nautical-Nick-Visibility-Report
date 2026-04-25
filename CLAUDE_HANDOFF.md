@@ -4,6 +4,153 @@
 
 ---
 
+## 2026-04-24 — Phase 2-C: Workflow YAMLs updated to TS pipeline
+
+> **Next Session: Start Here** → Phase 3 (Visibility Reporter). Spawn the **visibility-reporter** agent to implement the visibility algorithm, Claude API forecast generation (writing to `forecasts` + `prediction_logs`), and alert fan-out (writing to `alerts`). Backend agent is not involved in Phase 3 code unless schema changes are needed. Frontend agent can start reading from `forecasts` once Phase 3 has at least one row.
+
+### What was done in Phase 2-C
+
+All 4 GitHub Actions workflow YAMLs updated to call the new TypeScript pipeline instead of the vanilla JS scripts:
+
+| File | Old command | New command |
+|---|---|---|
+| `.github/workflows/daily-update.yml` | Multiple `node scripts/*.js` steps | Single `npx tsx scripts/update-all.ts` |
+| `.github/workflows/capture-7am.yml` | `node scripts/capture-pier-cam.js` | `npx tsx scripts/captures/capture-pier-cam.ts` |
+| `.github/workflows/capture-9am.yml` | `node scripts/capture-pier-cam.js` | `npx tsx scripts/captures/capture-pier-cam.ts` |
+| `.github/workflows/capture-12pm.yml` | `node scripts/capture-pier-cam.js` | `npx tsx scripts/captures/capture-pier-cam.ts` |
+
+`DATABASE_URL: ${{ secrets.DATABASE_URL }}` added to the env block of every job step that invokes the pipeline.
+
+All `git add data/ ... git commit ... git push` steps removed from all four workflows. The pipeline now writes to Postgres, not JSON files. JPG snapshots continue to write to `data/snapshots/` but on the Railway persistent volume — GitHub Actions has no access to that volume, so committing snapshots was always wrong. A comment in each capture workflow explains this.
+
+The `token: ${{ secrets.GITHUB_TOKEN }}` parameter on `actions/checkout@v4` was also removed — it was only needed to allow the bot push, which is gone.
+
+### underwater-park slug decision: Option A (no change needed)
+
+`data/regions.json` already has `{ "slug": "underwater-park", "name": "La Jolla Underwater Park" }` as one of the 17 SD spots. The `PIER_LOCATION_SLUG` constant in `scripts/captures/capture-pier-cam.ts` is `'underwater-park'` — these match exactly. No change was needed to either file. The seed at `prisma/seed.ts` reads from `data/regions.json` directly, so the slug is already in scope.
+
+### locations table seeding
+
+`prisma/seed.ts` uses `prisma.location.upsert` for every spot in every region of `data/regions.json` (17 SD spots + OC + LA + Catalina). If `npx prisma db seed` was run as part of Phase 2-A/2-B, the `underwater-park` row exists. If not, the pier cam script will exit with a fatal error on first run and tell you to seed first.
+
+To re-seed manually: `DATABASE_URL=<railway-url> npx prisma db seed`
+
+### Railway migration status
+
+Cannot verify directly from GH Actions or Railway CLI in this session. The user should check the Railway deploy logs for commit `4c10135` and confirm the log line:
+
+```
+Running prisma migrate deploy...
+Applying migration `phase2_ocean_data_tables`
+```
+
+If that line is absent, run `DATABASE_URL=<railway-url> npx prisma migrate deploy` manually.
+
+### Manual step required — GH Actions secret
+
+After pushing this commit, the user must add `DATABASE_URL` as a GitHub Actions repository secret:
+
+1. Go to https://github.com/nockmars/Nautical-Nick-Visibility-Report/settings/secrets/actions
+2. Click "New repository secret"
+3. Name: `DATABASE_URL`
+4. Value: the Railway public Postgres URL (same value currently in Railway env as `DATABASE_URL` on the migration environment — the `postgresql://postgres:...@...railway.app:.../<db>` string)
+5. Click "Add secret"
+
+This is required before any of the 4 updated workflows will succeed. Without it, every `tsx` invocation will exit immediately with `Fatal: DATABASE_URL is not set`.
+
+### Env vars in use across workflows (for reference)
+
+| Secret name | Used by |
+|---|---|
+| `DATABASE_URL` | All 4 workflows (new) |
+| `NASA_EARTHDATA_USER` | `daily-update.yml` |
+| `NASA_EARTHDATA_PASS` | `daily-update.yml` |
+| `ANTHROPIC_API_KEY` | `daily-update.yml`, all 3 capture workflows |
+| `RESEND_API_KEY` | `daily-update.yml` |
+| `FROM_EMAIL` | `daily-update.yml` |
+| `BASE_URL` | `daily-update.yml` |
+
+---
+
+## 2026-04-25 — Phase 1 fully verified end-to-end on production domain
+
+> **Next Session: Start Here** → User will say "initiate Phase 2." That means the Ocean Data pipeline port. Spawn the **ocean-data** agent to port `scripts/*.js` (chlorophyll, surf, satellite, tides, JustGetWet scrape, pier cam capture) to `scripts/fetchers/*.ts` writing into the new Postgres tables (`conditions`, `satellite_data`, `weather_data`, `tide_data`, `swell_data`, `chlorophyll_data`). Backend agent updates `.github/workflows/*.yml` cron schedules to invoke the new TS entrypoints and adds `DATABASE_URL` as a GitHub secret. Visibility-reporter agent stays out of this — its work comes in Phase 3.
+
+### What got verified today
+
+End-to-end auth + paywall loop on the live preview domain `nauticalnick.net`:
+
+| Check | Result |
+|---|---|
+| `/api/health` returns `{ ok, db:true }` | ✅ 200 |
+| Signup → 201 with user payload, sets cookie | ✅ |
+| `/api/auth/me` after signup returns `{ user, isPro:false }` | ✅ |
+| Logout clears session, idempotent | ✅ 200 |
+| Login restores session | ✅ 200 |
+| Wrong password → generic 401 (no email enumeration) | ✅ |
+| Stripe Checkout creates subscription-mode session | ✅ |
+| Webhook fires → DB upsert | ✅ |
+| `isPro` flips `false` → `true` after payment | ✅ |
+
+The flow was verified live with `4242 4242 4242 4242` against the real `nauticalnick.net` domain (Cloudflare-fronted, Railway-served, migration env).
+
+### Domain cutover (no longer parallel)
+
+- User has zero real users on the old vanilla site, so we skipped the Phase 4 cutover concept entirely.
+- `nauticalnick.net` removed from the old production environment, added to the migration service. DNS resolved immediately via Cloudflare.
+- Old production environment in Railway has been **deleted**. Postgres lives in migration env, so it survives.
+- There is no longer any "old vs new" — there's just `migration/next` branch on Railway, serving `nauticalnick.net`. Branch is now the source of truth; no rush to merge to `main`, but it's purely cosmetic at this point.
+
+### The long debugging chain (don't repeat)
+
+Phase 1 code worked first try locally on 2026-04-23. The 24h deploy fight was entirely env-var / Stripe-account-mismatch confusion. Sequence:
+
+1. Initial Railway deploy: `prisma migrate deploy` was in `buildCommand` but Postgres private network isn't available during build. **Fix:** moved to `startCommand` (`railway.json`).
+2. Healthcheck timeout was 30s; first deploy didn't make it in time. **Fix:** raised to 300s.
+3. Deploy logs: `DATABASE_URL resolved to an empty string`. The Postgres service's `DATABASE_URL` slot was literally empty (Railway only auto-populates when service is wired through their UI flow). **Fix:** user pasted the value from `DATABASE_PUBLIC_URL` into `DATABASE_URL` on the Postgres service. Reference variable on the Next.js service then resolved correctly. (Later optimization possible: switch to internal-network composite reference.)
+4. Stripe webhook flow: user had set up a **live-mode** webhook days earlier and the `whsec_...` in Railway was for that. Checkout was test mode. Live secret can't verify test events. **Fix:** added a separate test-mode webhook destination in Stripe dashboard (`https://dashboard.stripe.com/test/webhooks`), put its signing secret in Railway.
+5. After webhook fixed, `isPro` still didn't flip. Webhook log said `missing client_reference_id, skipping` — but we set it in the route. Root cause: **Stripe account mismatch.** User's IRS verification was approved between Phase 0 and Phase 1, which migrated the account to a new ID and rotated every key tied to it. The `STRIPE_SECRET_KEY` in Railway was from the pre-approval account; products and price IDs were created in the post-approval account. Test mode price IDs from the new account didn't exist when called through the SDK using the old account's secret key. **Fix:** updated `STRIPE_SECRET_KEY`, `STRIPE_PUBLISHABLE_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_ID_MONTHLY`, `STRIPE_PRICE_ID_ANNUAL` — all to the new account's values.
+6. Updated values weren't taking effect — user was editing the **production** Railway environment but `nauticalnick.net` was served by **migration** environment. Railway environments are isolated. **Fix:** updated the same vars on migration env. Production env then deleted (no traffic, just confusion).
+
+**Key learning for future agents:** when a Stripe call fails, the account ID is encoded in the suffix of every Stripe ID (`_RVMYfs5QvY` in our case). If the suffix on `STRIPE_SECRET_KEY` doesn't match the suffix on `STRIPE_PRICE_ID_*`, the keys are from different Stripe accounts. Quick check: `curl https://api.stripe.com/v1/prices/<id> -u <sk>:` returns `resource_missing` if account-mismatched.
+
+### Live config (migration env on Railway, as of 2026-04-25)
+
+- `STRIPE_SECRET_KEY` = `sk_test_51TOSsw…` (test mode, post-IRS-approval account)
+- `STRIPE_PUBLISHABLE_KEY` = `pk_test_51TOSsw…` (matching account)
+- `STRIPE_WEBHOOK_SECRET` = `whsec_...` (test-mode endpoint at `https://nauticalnick.net/api/stripe/webhook`)
+- `STRIPE_PRICE_ID_MONTHLY` = `price_1TPfVKRVMYfs5QvYZ6eCnnYM` ($9.99/mo recurring, product `prod_UOSQOrssnVJmDw`)
+- `STRIPE_PRICE_ID_ANNUAL` = `price_1TPfVKRVMYfs5QvYBDRN8t9K` ($99.99/yr recurring, same product)
+- `NEXT_PUBLIC_APP_URL` = `https://nauticalnick.net`
+- `DATABASE_URL` = currently the **public** Postgres URL pasted as a literal (works but uses public proxy). Optimization: switch to `${{Postgres.DATABASE_URL}}` reference once the internal-network value is non-empty.
+
+### Test users created during Phase 1 verification
+
+Several `smoketest-*@example.com`, `stripe-test-*@example.com`, `phase1-final-*@example.com` rows exist in the `users` and `subscriptions` tables. None are real customers. Can be ignored or deleted at any time. The most recent `phase1-final-1777092650@example.com` has `isPro=true` and an active test-mode subscription.
+
+### Outstanding follow-ups (not blocking Phase 2)
+
+- [ ] Switch `DATABASE_URL` from literal public URL to internal-network reference (`${{Postgres.DATABASE_URL}}`) once Postgres service exposes the internal value
+- [ ] Eventually swap to live-mode Stripe (`sk_live_...`, live price IDs, live webhook destination) when ready to actually sell — env-var flip only, no code change
+- [ ] When live, set up a separate live-mode webhook destination in Stripe dashboard
+- [ ] `lib/stripe/client.ts` has a `'sk_placeholder_build_only'` fallback for the build-time case when `STRIPE_SECRET_KEY` is unset. Cosmetic footgun; replace with a hard `requireStripeKey()` in the route handler instead.
+- [ ] `app/api/stripe/checkout/route.ts` doesn't wrap the Stripe call in try/catch — a Stripe error returns a generic 500 with no body, which is hard to debug from the client. Consider adding a `try/catch` that logs the error and returns `{ error: <message> }` (gated to non-prod or just safe-to-leak Stripe error codes).
+- [ ] When Phase 4 of the original plan is reconsidered: there is no Phase 4. Cutover already happened.
+
+### Phase 2 brief (next session)
+
+Start by reading `MIGRATION_PLAN.md` for the full Phase 2 scope. High-level:
+
+- Port `scripts/fetch-satellite.js`, `scripts/fetch-surf.js`, `scripts/scrape-justgetwet.js`, `scripts/capture-pier-cam.js`, and any tide/weather fetchers from the vanilla branch's `scripts/` to the new `scripts/fetchers/*.ts` (plus `scripts/scrapers/` and `scripts/captures/` per agent boundaries).
+- All fetchers write to the new Postgres tables (already in schema, currently empty).
+- GitHub Actions cron schedules in `.github/workflows/*.yml` need updating to invoke the TypeScript entrypoints (likely via `tsx` or compiled output).
+- Backend agent owns the workflow YAML changes and any new env vars / secrets.
+- Ocean-data agent owns the fetcher code itself.
+- Project-manager agent should orchestrate.
+- Visibility-reporter, frontend agents stay out of Phase 2.
+
+---
+
 ## 2026-04-23 — Phase 1 complete (schema + auth + Stripe + health)
 
 > **Next Session: Start Here** → Phase 2 (Ocean Data pipeline port). Backend agent should update `.github/workflows/*.yml` to invoke TS entrypoints + add `DATABASE_URL` secret. Ocean Data agent ports `scripts/*.js` to `scripts/fetchers/*.ts`.
