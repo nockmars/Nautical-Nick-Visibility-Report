@@ -4,6 +4,36 @@
 
 ---
 
+## 2026-04-25 — Phase 2 in-progress: 3/4 fetchers live, satellite needs debugging
+
+> **Next Session: Start Here** → Phase 2-A schema + Phase 2-B fetcher ports shipped and 95% verified. User dispatched daily-update: **surf 42 rows ✅ | weather 42 rows ✅ | conditions 59 rows ✅ | chlorophyll unavailable ❌**. Satellite failing — all NOAA + NASA fallbacks returning "unavailable". Debug workflow log for error details, likely NOAA URL/auth or NASA Earthdata propagation issue. Fix, re-run, confirm Phase 2 exit criteria, then Phase 3.
+
+### Current state
+
+- **Swell:** 42 fresh rows (open-meteo-marine source) ✅
+- **Weather:** 42 fresh rows (open-meteo source) ✅
+- **Conditions:** 59 rows (42 from weather + 17 from JustGetWet SD-only merge) ✅
+- **Chlorophyll:** 36 rows all `unavailable` (NOAA CoastWatch + West Coast + NASA OceanColor all failed) ❌
+- **Satellite JPGs:** not yet written (runs on 7am/9am/12pm cron, not daily-update)
+
+### Recent commits
+
+- `0669080` — Fixed satellite fetcher: SD-only filter (~17 spots), AbortController timeout, fixed orchestrator spawnSync timeout
+- `fc7c8ab` — Added seed-locations.yml one-shot workflow
+- `aa770e2` — Updated workflow YAMLs (Phase 2-C)
+- `13ca55b` — Ocean-data fetcher ports (Phase 2-B)
+- `4c10135` — Schema extension + migration (Phase 2-A)
+
+### Next steps
+
+1. Check latest daily-update workflow log → identify which NOAA endpoint + NASA auth failed
+2. Fix in satellite fetcher (likely: URL changed, auth not propagating, or timeout)
+3. Re-dispatch daily-update
+4. Confirm chlorophyll_data has fresh rows (not unavailable)
+5. Verify Phase 2 exit criteria (all 4 tables + source/stale fields populated)
+
+---
+
 ## 2026-04-24 — Phase 2-C: Workflow YAMLs updated to TS pipeline
 
 > **Next Session: Start Here** → Phase 3 (Visibility Reporter). Spawn the **visibility-reporter** agent to implement the visibility algorithm, Claude API forecast generation (writing to `forecasts` + `prediction_logs`), and alert fan-out (writing to `alerts`). Backend agent is not involved in Phase 3 code unless schema changes are needed. Frontend agent can start reading from `forecasts` once Phase 3 has at least one row.
