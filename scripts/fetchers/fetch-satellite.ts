@@ -61,7 +61,8 @@ const SOURCES: ErddapSource[] = [
   },
 ];
 
-const REQUEST_DELAY_MS = 350;
+const REQUEST_DELAY_MS  = 350;
+const REQUEST_TIMEOUT_MS = 15_000;
 
 // ── Main ──────────────────────────────────────────────────────────────────────
 
@@ -71,11 +72,15 @@ async function main(): Promise<void> {
     process.exit(1);
   }
 
+  // Chlorophyll sources (NOAA CoastWatch, NOAA West Coast, NASA OceanColor)
+  // only cover San Diego waters. Fetching LA/OC/Catalina locations produces
+  // unavailable rows — noise, not signal. Filter to SD only.
   const locations = await prisma.location.findMany({
+    where:   { regionId: 'san-diego' },
     orderBy: [{ regionId: 'asc' }, { slug: 'asc' }],
   });
 
-  console.log(`[satellite] Fetching chlorophyll for ${locations.length} locations...`);
+  console.log(`[satellite] Fetching chlorophyll for ${locations.length} SD locations...`);
   console.log(`[satellite] Earthdata auth: ${hasEarthdata ? 'configured' : 'not configured (skipping NASA OceanColor)'}`);
 
   const stats = { fresh: 0, stale: 0, unknown: 0 };
@@ -176,7 +181,7 @@ export async function fetchChlorophyll(
   const url  = `${source.base}/${source.dataset}.json` +
                `?chlorophyll%5B(last)%5D%5B(${lat})%5D%5B(${lon})%5D`;
 
-  const config: Parameters<typeof axios.get>[1] = { timeout: 20_000 };
+  const config: Parameters<typeof axios.get>[1] = { timeout: REQUEST_TIMEOUT_MS };
   if (source.requiresAuth) {
     config.auth = { username: EARTHDATA_USER, password: EARTHDATA_PASS };
   }

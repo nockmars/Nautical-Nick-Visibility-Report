@@ -19,7 +19,7 @@
  */
 
 import 'dotenv/config';
-import { execSync } from 'child_process';
+import { spawn } from 'child_process';
 import * as path from 'path';
 
 if (!process.env.DATABASE_URL) {
@@ -34,11 +34,55 @@ interface ScriptDef {
 }
 
 const SCRIPTS: ScriptDef[] = [
-  { name: 'satellite',  file: 'fetchers/fetch-satellite.ts',  critical: true  },
-  { name: 'surf',       file: 'fetchers/fetch-surf.ts',       critical: true  },
-  { name: 'weather',    file: 'fetchers/fetch-weather.ts',    critical: true  },
+  { name: 'satellite',  file: 'fetchers/fetch-satellite.ts',   critical: true  },
+  { name: 'surf',       file: 'fetchers/fetch-surf.ts',        critical: true  },
+  { name: 'weather',    file: 'fetchers/fetch-weather.ts',     critical: true  },
   { name: 'justgetwet', file: 'scrapers/scrape-justgetwet.ts', critical: false },
 ];
+
+// Per-script timeout. Satellite runs ~17 SD locations × (15s req + 350ms delay)
+// ≈ ~260s worst-case with all sources failing; in practice 1 source succeeds
+// quickly. 120s gives healthy headroom for the happy path.
+const SCRIPT_TIMEOUT_MS = 120_000;
+
+/**
+ * Run a tsx script as a child process with a hard timeout.
+ * Returns the exit code, or throws on timeout (child is SIGKILL'd).
+ */
+function runScript(scriptPath: string, name: string): Promise<number> {
+  return new Promise((resolve, reject) => {
+    const child = spawn(
+      'npx',
+      ['tsx', scriptPath],
+      {
+        stdio: 'inherit',
+        env: {
+          ...process.env,
+          DATABASE_URL: process.env.DATABASE_URL,
+        },
+        // shell: false — we exec npx directly, no /bin/sh in the middle.
+        // This means SIGKILL on timeout reaches the actual Node process.
+        shell: false,
+      },
+    );
+
+    const timer = setTimeout(() => {
+      console.error(`[update-all] ${name} exceeded ${SCRIPT_TIMEOUT_MS / 1000}s — killing child.`);
+      child.kill('SIGKILL');
+      reject(new Error(`${name} timed out after ${SCRIPT_TIMEOUT_MS / 1000}s`));
+    }, SCRIPT_TIMEOUT_MS);
+
+    child.on('close', (code) => {
+      clearTimeout(timer);
+      resolve(code ?? 1);
+    });
+
+    child.on('error', (err) => {
+      clearTimeout(timer);
+      reject(err);
+    });
+  });
+}
 
 async function main(): Promise<void> {
   const start = Date.now();
@@ -53,15 +97,10 @@ async function main(): Promise<void> {
     const scriptPath = path.join(__dirname, script.file);
     console.log(`\n-- Running: ${script.name} --`);
     try {
-      execSync(`npx tsx "${scriptPath}"`, {
-        stdio:   'inherit',
-        timeout: 180_000,
-        env: {
-          ...process.env,
-          // Ensure DATABASE_URL propagates to child processes
-          DATABASE_URL: process.env.DATABASE_URL,
-        },
-      });
+      const code = await runScript(scriptPath, script.name);
+      if (code !== 0) {
+        throw new Error(`exited with code ${code}`);
+      }
       console.log(`[ok] ${script.name} complete`);
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
