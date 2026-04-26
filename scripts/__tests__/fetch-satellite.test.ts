@@ -10,8 +10,8 @@
  *   - lib/db/client prisma — in-memory mock, no real DB
  *
  * Scenarios:
- *   A. Primary source returns valid data → stale=false, source=noaa-coastwatch
- *   B. Primary fails, secondary succeeds → stale=false, source=noaa-westcoast
+ *   A. Primary source returns valid data → stale=false, source=noaa-westcoast
+ *   B. Primary fails, secondary succeeds → stale=false, source=noaa-coastwatch
  *   B-alt. Primary returns empty rows, secondary succeeds
  *   C. All sources fail, prior DB row exists → stale=true, source=cached
  *   D. All sources fail, no prior DB row → stale=true, source=unavailable, valueMgM3=null
@@ -19,6 +19,7 @@
  *   F. Chlorophyll value is rounded to 2 decimal places
  *   G. SD-only filter: location query uses where: { regionId: 'san-diego' }
  *   H. Per-request timeout: axios is called with timeout: 15000
+ *   I. Per-attempt error logging: console.warn called with source name + status on failure
  */
 
 // Set DATABASE_URL before any import so the module-level guard (now inside main()) passes.
@@ -57,13 +58,13 @@ import { fetchWithFallbackChain, fetchChlorophyll } from '../fetchers/fetch-sate
 
 function makeErddapResponse(chl: number | null): object {
   if (chl === null) {
-    return { data: { table: { columnNames: ['time', 'chlorophyll'], rows: [] } } };
+    return { data: { table: { columnNames: ['time', 'altitude', 'latitude', 'longitude', 'chlor_a'], rows: [] } } };
   }
   return {
     data: {
       table: {
-        columnNames: ['time', 'chlorophyll'],
-        rows: [['2026-04-24T00:00:00Z', chl]],
+        columnNames: ['time', 'altitude', 'latitude', 'longitude', 'chlor_a'],
+        rows: [['2026-04-24T00:00:00Z', 0.0, 32.8506, -117.2727, chl]],
       },
     },
   };
@@ -82,25 +83,25 @@ beforeEach(() => {
 });
 
 describe('fetchWithFallbackChain — fallback chain', () => {
-  it('A: primary source succeeds → stale=false, source=noaa-coastwatch', async () => {
+  it('A: primary source succeeds → stale=false, source=noaa-westcoast', async () => {
     axiosMock.get = jest.fn().mockResolvedValue(makeErddapResponse(0.45));
 
     const result = await fetchWithFallbackChain(LAT, LON, LOC_ID);
 
     expect(result.stale).toBe(false);
-    expect(result.source).toBe('noaa-coastwatch');
+    expect(result.source).toBe('noaa-westcoast');
     expect(result.data?.valueMgM3).toBe(0.45);
   });
 
-  it('B: primary fails (throws), secondary succeeds → stale=false, source=noaa-westcoast', async () => {
+  it('B: primary fails (throws), secondary succeeds → stale=false, source=noaa-coastwatch', async () => {
     axiosMock.get = jest.fn()
-      .mockRejectedValueOnce(new Error('CoastWatch timeout'))
+      .mockRejectedValueOnce(new Error('VIIRS timeout'))
       .mockResolvedValueOnce(makeErddapResponse(0.72));
 
     const result = await fetchWithFallbackChain(LAT, LON, LOC_ID);
 
     expect(result.stale).toBe(false);
-    expect(result.source).toBe('noaa-westcoast');
+    expect(result.source).toBe('noaa-coastwatch');
     expect(result.data?.valueMgM3).toBe(0.72);
   });
 
@@ -112,7 +113,7 @@ describe('fetchWithFallbackChain — fallback chain', () => {
     const result = await fetchWithFallbackChain(LAT, LON, LOC_ID);
 
     expect(result.stale).toBe(false);
-    expect(result.source).toBe('noaa-westcoast');
+    expect(result.source).toBe('noaa-coastwatch');
     expect(result.data?.valueMgM3).toBe(1.1);
   });
 
@@ -123,7 +124,7 @@ describe('fetchWithFallbackChain — fallback chain', () => {
       locationId: LOC_ID,
       valueMgM3:  1.23,
       fetchedAt:  new Date('2026-04-24T12:00:00Z'),
-      source:     'noaa-coastwatch',
+      source:     'noaa-westcoast',
       stale:      false,
       raw:        null,
       createdAt:  new Date(),
@@ -159,8 +160,8 @@ describe('fetchWithFallbackChain — fallback chain', () => {
     axiosMock.get = jest.fn().mockResolvedValue({
       data: {
         table: {
-          columnNames: ['time', 'chlorophyll'],
-          rows: [['2026-04-24T00:00:00Z', 0.4567890]],
+          columnNames: ['time', 'altitude', 'latitude', 'longitude', 'chlor_a'],
+          rows: [['2026-04-24T00:00:00Z', 0.0, 32.8506, -117.2727, 0.4567890]],
         },
       },
     });
@@ -169,39 +170,53 @@ describe('fetchWithFallbackChain — fallback chain', () => {
 
     expect(result.data?.valueMgM3).toBe(0.46);
   });
+
+  it('I: per-attempt error logging — console.warn called with source name and status on failure', async () => {
+    const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+    const httpErr = Object.assign(new Error('Request failed with status code 404'), {
+      response: { status: 404 },
+    });
+    axiosMock.get = jest.fn()
+      .mockRejectedValueOnce(httpErr)
+      .mockRejectedValueOnce(new Error('network error'));
+
+    await fetchWithFallbackChain(LAT, LON, LOC_ID);
+
+    // First warn: noaa-westcoast with status 404
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining('noaa-westcoast'),
+    );
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining('404'),
+    );
+    // Second warn: noaa-coastwatch with no-status
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining('noaa-coastwatch'),
+    );
+
+    warnSpy.mockRestore();
+  });
 });
 
 describe('SD-only filter — location query', () => {
-  it('G: fetchChlorophyll passes regionId: san-diego in the where clause', async () => {
-    // We can't call main() directly in tests (it calls process.exit), so we
-    // verify the filter by inspecting the axios call shape used by fetchChlorophyll,
-    // and separately assert the prisma where clause via mockLocationFindMany.
-    //
-    // The filter lives in main() — we assert it indirectly by confirming that
-    // mockLocationFindMany is called with where: { regionId: 'san-diego' } when
-    // the module's main() would run. Since main() isn't exported we test the
-    // intent by confirming the mock contract: if it were called it would receive
-    // the SD filter. We validate this by calling fetchChlorophyll directly to
-    // confirm no crash, and separately inspect the source list.
-    //
-    // A true integration test would exercise main() via a subprocess; here we
-    // assert the axios.get config carries timeout: 15000 (the per-request budget).
+  it('G: fetchChlorophyll uses signed longitude and includes altitude axis in URL', async () => {
     axiosMock.get = jest.fn().mockResolvedValue(makeErddapResponse(0.5));
 
     const source = {
-      name: 'noaa-coastwatch' as const,
-      base: 'https://coastwatch.pfeg.noaa.gov/erddap/griddap',
-      dataset: 'erdMH1chla1day',
-      requiresAuth: false,
+      name: 'noaa-westcoast' as const,
+      base: 'https://coastwatch.noaa.gov/erddap/griddap',
+      dataset: 'noaacwNPPVIIRSSQchlaDaily',
     };
 
     await fetchChlorophyll(source, LAT, LON);
 
-    // Confirm axios.get was called with the correct timeout
-    expect(axiosMock.get).toHaveBeenCalledWith(
-      expect.stringContaining('erdMH1chla1day'),
-      expect.objectContaining({ timeout: 15_000 }),
-    );
+    const [calledUrl] = (axiosMock.get as jest.Mock).mock.calls[0];
+    // Signed longitude (not 0-360 converted)
+    expect(calledUrl).toContain('-117.2727');
+    // Altitude axis present
+    expect(calledUrl).toContain('(0.0)');
+    // chlor_a variable (not chlorophyll)
+    expect(calledUrl).toContain('chlor_a');
   });
 });
 
@@ -213,7 +228,6 @@ describe('per-request timeout — axios config', () => {
       name: 'noaa-westcoast' as const,
       base: 'https://coastwatch.noaa.gov/erddap/griddap',
       dataset: 'noaacwNPPVIIRSSQchlaDaily',
-      requiresAuth: false,
     };
 
     await fetchChlorophyll(source, LAT, LON);
@@ -227,13 +241,12 @@ describe('per-request timeout — axios config', () => {
     axiosMock.get = jest.fn().mockRejectedValue(timeoutErr);
 
     const source = {
-      name: 'noaa-coastwatch' as const,
-      base: 'https://coastwatch.pfeg.noaa.gov/erddap/griddap',
-      dataset: 'erdMH1chla1day',
-      requiresAuth: false,
+      name: 'noaa-westcoast' as const,
+      base: 'https://coastwatch.noaa.gov/erddap/griddap',
+      dataset: 'noaacwNPPVIIRSSQchlaDaily',
     };
 
-    // fetchChlorophyll itself should throw — the swallow happens in fetchWithFallbackChain
+    // fetchChlorophyll itself should throw — the warn happens in fetchWithFallbackChain
     await expect(fetchChlorophyll(source, LAT, LON)).rejects.toThrow('timeout');
   });
 });

@@ -1,20 +1,20 @@
 /**
  * scripts/fetchers/fetch-satellite.ts
  *
- * Fetches daily chlorophyll-a concentration per location using a 3-source
+ * Fetches daily chlorophyll-a concentration per location using a 2-source
  * fallback chain. Writes one row to `chlorophyll_data` per location per run.
  *
  * Source chain (in order of preference):
- *   1. NOAA CoastWatch ERDDAP (MODIS Aqua)   — noaa-coastwatch
- *   2. NOAA West Coast ERDDAP (VIIRS NPP)    — noaa-westcoast
- *   3. NASA OceanColor ERDDAP (MODIS)        — nasa-oceancolor
- *   4. Most recent prior DB row              — cached / stale: true
- *   5. Null row                              — unavailable / stale: true
+ *   1. NOAA West Coast ERDDAP (VIIRS NPP)     — noaa-westcoast
+ *   2. NOAA CoastWatch ERDDAP (gap-filled)    — noaa-coastwatch
+ *   3. Most recent prior DB row               — cached / stale: true
+ *   4. Null row                               — unavailable / stale: true
  *
- * ERDDAP uses 0–360 longitude, so -117.27 becomes 242.73.
+ * These datasets take signed longitude (-180 to 180), NOT 0-360.
+ * Both have 4 axes: time, altitude, latitude, longitude (altitude fixed at 0.0).
  *
  * Usage: tsx scripts/fetchers/fetch-satellite.ts
- * Env:   NASA_EARTHDATA_USER, NASA_EARTHDATA_PASS, DATABASE_URL
+ * Env:   DATABASE_URL
  */
 
 import 'dotenv/config';
@@ -27,37 +27,24 @@ import type {
   ErddapTableResponse,
 } from '../../lib/data/types';
 
-const EARTHDATA_USER = process.env.NASA_EARTHDATA_USER ?? '';
-const EARTHDATA_PASS = process.env.NASA_EARTHDATA_PASS ?? '';
-const hasEarthdata   = !!(EARTHDATA_USER && EARTHDATA_PASS);
-
 // ── Source definitions ────────────────────────────────────────────────────────
 
 interface ErddapSource {
   name: OceanSource;
   base: string;
   dataset: string;
-  requiresAuth: boolean;
 }
 
 const SOURCES: ErddapSource[] = [
   {
-    name: 'noaa-coastwatch',
-    base: 'https://coastwatch.pfeg.noaa.gov/erddap/griddap',
-    dataset: 'erdMH1chla1day',
-    requiresAuth: false,
-  },
-  {
     name: 'noaa-westcoast',
     base: 'https://coastwatch.noaa.gov/erddap/griddap',
     dataset: 'noaacwNPPVIIRSSQchlaDaily',
-    requiresAuth: false,
   },
   {
-    name: 'nasa-oceancolor',
-    base: 'https://oceandata.sci.gsfc.nasa.gov/erddap/griddap',
-    dataset: 'erdMH1chla1day',
-    requiresAuth: true,
+    name: 'noaa-coastwatch',
+    base: 'https://coastwatch.pfeg.noaa.gov/erddap/griddap',
+    dataset: 'nesdisVHNnoaaSNPPnoaa20chlaGapfilledDaily',
   },
 ];
 
@@ -72,16 +59,14 @@ async function main(): Promise<void> {
     process.exit(1);
   }
 
-  // Chlorophyll sources (NOAA CoastWatch, NOAA West Coast, NASA OceanColor)
-  // only cover San Diego waters. Fetching LA/OC/Catalina locations produces
-  // unavailable rows — noise, not signal. Filter to SD only.
+  // Chlorophyll sources only cover San Diego waters. Fetching LA/OC/Catalina
+  // locations produces unavailable rows — noise, not signal. Filter to SD only.
   const locations = await prisma.location.findMany({
     where:   { regionId: 'san-diego' },
     orderBy: [{ regionId: 'asc' }, { slug: 'asc' }],
   });
 
   console.log(`[satellite] Fetching chlorophyll for ${locations.length} SD locations...`);
-  console.log(`[satellite] Earthdata auth: ${hasEarthdata ? 'configured' : 'not configured (skipping NASA OceanColor)'}`);
 
   const stats = { fresh: 0, stale: 0, unknown: 0 };
   const now = new Date();
@@ -127,7 +112,6 @@ export async function fetchWithFallbackChain(
   const fetchedAt = new Date();
 
   for (const source of SOURCES) {
-    if (source.requiresAuth && !hasEarthdata) continue;
     try {
       const reading = await fetchChlorophyll(source, lat, lonSigned);
       if (reading.valueMgM3 != null) {
@@ -139,8 +123,10 @@ export async function fetchWithFallbackChain(
           raw:       { dataset: source.dataset, lat, lon: lonSigned },
         };
       }
-    } catch {
-      // swallow and fall through to next source
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      const status = (err as { response?: { status?: number } })?.response?.status;
+      console.warn(`  [satellite] ${source.name} failed: ${status ?? 'no-status'} ${msg.slice(0, 120)}`);
     }
   }
 
@@ -176,22 +162,17 @@ export async function fetchChlorophyll(
   lat: number,
   lonSigned: number,
 ): Promise<ChlorophyllReading> {
-  // ERDDAP uses 0–360 longitude
-  const lon = lonSigned < 0 ? 360 + lonSigned : lonSigned;
-  const url  = `${source.base}/${source.dataset}.json` +
-               `?chlorophyll%5B(last)%5D%5B(${lat})%5D%5B(${lon})%5D`;
+  // These datasets take signed longitude (-180 to 180) and have 4 axes:
+  // time, altitude (fixed at 0.0), latitude, longitude.
+  const url = `${source.base}/${source.dataset}.json` +
+              `?chlor_a%5B(last)%5D%5B(0.0)%5D%5B(${lat})%5D%5B(${lonSigned})%5D`;
 
-  const config: Parameters<typeof axios.get>[1] = { timeout: REQUEST_TIMEOUT_MS };
-  if (source.requiresAuth) {
-    config.auth = { username: EARTHDATA_USER, password: EARTHDATA_PASS };
-  }
-
-  const res  = await axios.get<ErddapTableResponse>(url, config);
+  const res  = await axios.get<ErddapTableResponse>(url, { timeout: REQUEST_TIMEOUT_MS });
   const rows = res.data?.table?.rows;
   if (!rows || rows.length === 0) return { valueMgM3: null, dataTimestamp: null };
 
   const cols   = res.data.table!.columnNames;
-  const chlIdx = cols.indexOf('chlorophyll');
+  const chlIdx = cols.indexOf('chlor_a');
   const tIdx   = cols.indexOf('time');
   const raw    = rows[0][chlIdx];
   const chl    = typeof raw === 'number' ? raw : parseFloat(String(raw ?? ''));
