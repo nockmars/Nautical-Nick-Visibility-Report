@@ -28,7 +28,7 @@ jobs:
       - name: Run pg_dump
         run: |
           FILENAME="nautical-nick-$(date -u +%Y%m%d-%H%M%S).dump"
-          pg_dump "$DATABASE_URL" \
+          /usr/lib/postgresql/18/bin/pg_dump "$DATABASE_URL" \
             --no-owner \
             --no-acl \
             --clean \
