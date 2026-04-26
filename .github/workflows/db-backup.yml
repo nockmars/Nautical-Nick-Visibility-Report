@@ -1,0 +1,46 @@
+name: Nightly Postgres Backup
+
+# To restore: download the artifact, then run:
+# pg_restore --clean --if-exists --no-owner --no-acl \
+#   -d "$DATABASE_URL" nautical-nick-YYYYMMDD-HHMMSS.dump
+
+on:
+  schedule:
+    # 09:00 UTC daily — after daily-update at 08:30 UTC so the backup captures the latest data
+    - cron: '0 9 * * *'
+  workflow_dispatch:
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+
+    steps:
+      - name: Install PostgreSQL client 16
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y postgresql-client-16
+
+      - name: Run pg_dump
+        run: |
+          FILENAME="nautical-nick-$(date -u +%Y%m%d-%H%M%S).dump"
+          pg_dump "$DATABASE_URL" \
+            --no-owner \
+            --no-acl \
+            --clean \
+            --if-exists \
+            --format=custom \
+            --file="$FILENAME"
+          echo "BACKUP_FILE=$FILENAME" >> "$GITHUB_ENV"
+          echo "Backup size: $(du -sh "$FILENAME" | cut -f1)"
+
+      - name: Upload backup artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: postgres-backup-${{ github.run_id }}
+          path: ${{ env.BACKUP_FILE }}
+          retention-days: 90
+          if-no-files-found: error
