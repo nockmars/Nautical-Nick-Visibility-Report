@@ -4,6 +4,66 @@
 
 ---
 
+## 2026-04-26 — Phase 2 COMPLETE — full pipeline live on preview Postgres
+
+> **Next Session: Start Here** → Phase 2 fully verified end-to-end. All 4 fetchers writing real data: **surf 42 ✅ | weather 42 ✅ | conditions 59 ✅ | chlorophyll 17 ✅**. Ready for **Phase 3 (Visibility Reporter)** — spawn the visibility-reporter agent (Opus) to implement `lib/forecast/compute-visibility.ts`, write daily forecast cron `scripts/forecast/generate-forecasts.ts` (reads ocean-data tables, writes `forecasts`), `scripts/forecast/generate-summary.ts` (Claude API daily summaries with prompt caching), and `scripts/alerts/send-alerts.ts`. Backend exposes API routes reading from `forecasts` with paywall gating. Frontend stays out until Phase 4.
+
+### Satellite fix (commit f69c54a)
+
+Five bugs in `scripts/fetchers/fetch-satellite.ts` diagnosed via Claude-in-Chrome browser automation + direct curl tests against ERDDAP endpoints. Root causes:
+
+1. **Wrong longitude conversion** — code converted -117.27 → 242.73 thinking ERDDAP needs 0-360. Datasets actually use -180 to 180. Removed the conversion.
+2. **Wrong variable name** — used `chlorophyll`, datasets use `chlor_a`. Updated URL builder + JSON parser.
+3. **Wrong dataset IDs** — `erdMH1chla1day` was retired (last data 2022-07-27). Replaced with `noaacwNPPVIIRSSQchlaDaily` (primary) + `nesdisVHNnoaaSNPPnoaa20chlaGapfilledDaily` (gap-filled fallback). Dropped NASA OceanColor entry — `oceandata.sci.gsfc.nasa.gov` host unreliable, dataset same retired one.
+4. **Missing altitude axis** — datasets have 4 dimensions (`time, altitude, latitude, longitude`), URL only sent 3. Added `[(0.0)]` for altitude.
+5. **Silent error swallow** (`catch {}`) — masked bugs 1-4 for two days. Replaced with typed catch logging source name + HTTP status + truncated message.
+
+11 tests passing (up from 10). Removed `EARTHDATA_USER`/`PASS` env reads since NASA source dropped.
+
+**Verified output (run #10, 2026-04-26):**
+```
+[satellite] Done: 17 fresh, 0 stale, 0 unknown.
+```
+Real values: La Jolla Cove 0.74, Carlsbad 0.58, Coronado 5.45, Mission Bay 8.57 mg/m³.
+
+### Final ocean-data table state (preview Postgres)
+
+| Table | Row count | Source | Notes |
+|---|---|---|---|
+| `chlorophyll_data` | 17 fresh | `noaa-westcoast`, `noaa-coastwatch` | First clean run 2026-04-26 |
+| `swell_data` | 42 fresh | `open-meteo-marine` | All 4 SoCal regions (SD + LA + OC + Catalina) |
+| `weather_data` | 42 fresh | `open-meteo` | All 4 regions; includes 5d rain history |
+| `conditions` | 59 | `weather` + `justgetwet` | 42 weather + 17 SD justgetwet merge |
+| `satellite_data` | 0 | n/a | Pier cam captures run 7am/9am/12pm cron, not daily-update |
+| `tide_data` | 0 | n/a | Reserved table, no fetcher in Phase 2 |
+
+Pre-fix `chlorophyll_data` had ~36 stale "unavailable" rows from the failed runs. Future cleanup: delete those if they cause noise in Phase 3 forecast logic. For now they're safely filterable via `where: { source: { not: 'unavailable' } }`.
+
+### Phase 2 commit trail
+
+| Commit | What |
+|---|---|
+| `4c10135` | Schema flesh-out (Phase 2-A) |
+| `13ca55b` | Ocean-data ports (Phase 2-B) |
+| `aa770e2` | Workflow YAMLs (Phase 2-C) |
+| `fc7c8ab` | seed-locations.yml one-shot |
+| `0669080` | Satellite fix attempt 1 (SD-only filter, AbortController) |
+| `1862bbc` | Mid-Phase-2 handoff |
+| `b5d2fbc` | Behavioral guidelines added to CLAUDE.md |
+| `f69c54a` | Satellite fix attempt 2 — five-bug fix, fully working |
+
+### Diagnostic note for future sessions
+
+Diagnosing the satellite issue took two days of back-and-forth before switching to Claude-in-Chrome browser automation. With browser control + direct shell access to test endpoints, root cause was found in ~20 minutes. **For any "workflow says success but DB is empty" or "API call silently failing" debugging, jump to Claude-in-Chrome immediately.** The pattern: read the workflow log via JS DOM scraping (faster than scrolling), identify silent catches, test endpoints with `curl` to get the actual error, fix surgically.
+
+### Outstanding follow-ups (not blocking Phase 3)
+
+- [ ] `scripts/captures/capture-pier-cam.ts` line 192 has an empty `catch {}` (technically logs on the next line but doesn't bind the error) — small cleanup, fix when next touching that file.
+- [ ] Cleanup the ~36 stale `unavailable` rows in `chlorophyll_data` if they cause noise in Phase 3 forecast queries.
+- [ ] Pier cam 7am/9am/12pm captures haven't been verified end-to-end yet. They run on cron — check tomorrow's runs.
+
+---
+
 ## 2026-04-25 — Phase 2 in-progress: 3/4 fetchers live, satellite needs debugging
 
 > **Next Session: Start Here** → Phase 2-A schema + Phase 2-B fetcher ports shipped and 95% verified. User dispatched daily-update: **surf 42 rows ✅ | weather 42 rows ✅ | conditions 59 rows ✅ | chlorophyll unavailable ❌**. Satellite failing — all NOAA + NASA fallbacks returning "unavailable". Debug workflow log for error details, likely NOAA URL/auth or NASA Earthdata propagation issue. Fix, re-run, confirm Phase 2 exit criteria, then Phase 3.
