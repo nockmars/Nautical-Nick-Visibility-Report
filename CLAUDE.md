@@ -40,6 +40,40 @@
 
 ---
 
+## 🚫 Forbidden Commands (Hard Rules)
+
+**Never run these without explicit user approval in the chat.** Approval given in a previous session does NOT carry over.
+
+### Database (data loss)
+- `npx prisma migrate reset` — wipes the entire DB and reapplies migrations from scratch
+- `npx prisma db push --accept-data-loss` — destructive schema sync, drops columns/tables
+- `prisma.$executeRaw` containing `DROP TABLE`, `DROP DATABASE`, `TRUNCATE`, `DELETE FROM <table>` (without WHERE)
+- Any raw SQL `DROP`, `TRUNCATE`, or unbounded `DELETE` against preview or production Postgres
+
+### Git (history loss)
+- `git push --force` or `git push -f` to `main` or `migration/next`
+- `git reset --hard` followed by a force-push
+- `git branch -D <name>` of any branch with unmerged commits
+- Deleting tags (`git tag -d` + `git push --delete`)
+
+### Files (work loss)
+- `rm -rf` on any directory not under `node_modules/`, `.next/`, `dist/`, `build/`, or `/tmp/`
+- Bulk deletion of files outside the immediate scope of the task
+
+### When you're tempted
+
+If you genuinely need one of these (e.g. a migration is corrupted), **stop and ask the user**. Frame the request like: "I need to run `prisma migrate reset` against preview to fix X. This will wipe the 17 SD chlorophyll rows + 42 weather rows. Last backup was [date]. Approve?" Then wait for an explicit "yes" before proceeding.
+
+### Backup safety net
+
+Daily Postgres backup runs at 09:00 UTC via `.github/workflows/db-backup.yml`. Artifacts kept 90 days. If you accidentally lose data, restore via:
+```bash
+pg_restore --clean --if-exists --no-owner --no-acl -d "$DATABASE_URL" <dump-file>
+```
+But **don't rely on the backup as a safety net for casual destructive commands.** A wipe + restore loses up to 24h of data.
+
+---
+
 ## Shell
 Always use **bash**. Never use PowerShell.
 
